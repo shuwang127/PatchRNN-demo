@@ -36,14 +36,14 @@ To provide a path to libclang use Config.set_library_path() or Config.set_librar
 
 To solve this problem, you can make a simbolic link for `libclang-6.0.so.1` in `/usr/lib/x86_64-linux-gnu/`.
 
-```
+```shell script
 > cd /usr/lib/x86_64-linux-gnu/
 > ll | grep clang
--rw-r--r--   1 root root 27976816 Apr  5  2018 libclang-6.0.so.1
+  -rw-r--r--   1 root root 27976816 Apr  5  2018 libclang-6.0.so.1
 > sudo ln -s libclang-6.0.so.1 libclang.so
 > ll | grep clang
--rw-r--r--   1 root root 27976816 Apr  5  2018 libclang-6.0.so.1
-lrwxrwxrwx   1 root root       17 Feb  3 23:03 libclang.so -> libclang-6.0.so.1
+  -rw-r--r--   1 root root 27976816 Apr  5  2018 libclang-6.0.so.1
+  lrwxrwxrwx   1 root root       17 Feb  3 23:03 libclang.so -> libclang-6.0.so.1
 ```
 
 
