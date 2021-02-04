@@ -46,8 +46,34 @@ To solve this problem, you can make a simbolic link for `libclang-6.0.so.1` in `
   lrwxrwxrwx   1 root root       17 Feb  3 23:03 libclang.so -> libclang-6.0.so.1
 ```
 
+**File Structure**:
 
-**Usage**:
+```
+PatchRNN
+    |-- logs                                      
+        |-- PatchRNNdemo.log                          # log file recording the running information.
+    |-- model                                         # folder used to store pre-trained parameters and model.
+        |-- model_TwinRNN.pth                         # a pretrained model.
+        |-- tokenDict.pickle                          # dictionary file for diff code.
+        |-- tokenDictMsg.pickle                       # dictionary file for commit message.
+    |-- results                                       # folder used to store the prediction results.
+        |-- results.txt                               # result file.
+    |-- testdata                                      # folder used to store input test data.
+        |-- nginx
+            |-- release-1.19.0_release-1.19.1
+                |-- *.patch                           # test patch file.
+    |-- tmp                                           # folder used to store temporary results.
+        |-- *.npy
+    |-- demo.py                                       # main python file.
+    |-- README.md                                     # this file.
+```
+
+**How to Run**:
+
+***Step 1:*** put the test patch data into the folder `./testdata/`.
+
+
+
 ```shell script
 python SecurityPatchIdentificationRNN.py
 ```
