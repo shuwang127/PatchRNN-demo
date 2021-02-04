@@ -77,3 +77,22 @@ PatchRNN
 ```shell script
 > python3 ./demo.py
 ```
+
+***Step 3:*** check the prediction result in the file `./results/results.txt`.
+
+```shell script
+> cat ./results/results.txt
+```
+
+The output would like the following format `[path_to_file],[0 or 1]`.
+
+```
+.//testdata/nginx/release-1.19.0_release-1.19.1/0a683fdd.patch,1
+.//testdata/nginx/release-1.19.0_release-1.19.1/1bbc37d3.patch,1
+.//testdata/nginx/release-1.19.0_release-1.19.1/2afc050b.patch,0
+.//testdata/nginx/release-1.19.0_release-1.19.1/2d4f04bb.patch,0
+.//testdata/nginx/release-1.19.0_release-1.19.1/6bb43361.patch,1
+...
+```
+
+If the prediction is 1, the sample is identified as a security patch; otherwise it is identified as non-security one.
