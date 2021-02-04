@@ -1,0 +1,25 @@
+From 1d696cd37947ef816bde4d54d7b6f97374f1151d Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Mon, 10 Aug 2020 18:52:20 +0300
+Subject: [PATCH] HTTP/2: fixed c->timedout flag on timed out connections.
+
+Without the flag, SSL shutdown is attempted on such connections,
+resulting in useless work and/or bogus "SSL_shutdown() failed
+(SSL: ... bad write retry)" critical log messages if there are
+blocked writes.
+---
+ src/http/v2/ngx_http_v2.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/http/v2/ngx_http_v2.c b/src/http/v2/ngx_http_v2.c
+index ec553ecfeb..51c8b0a71b 100644
+--- a/src/http/v2/ngx_http_v2.c
++++ b/src/http/v2/ngx_http_v2.c
+@@ -475,6 +475,7 @@ ngx_http_v2_write_handler(ngx_event_t *wev)
+         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                        "http2 write event timed out");
+         c->error = 1;
++        c->timedout = 1;
+         ngx_http_v2_finalize_connection(h2c, 0);
+         return;
+     }

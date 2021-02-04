@@ -1,0 +1,38 @@
+From 554916301c424f02b1cabc073845b64f8681099b Mon Sep 17 00:00:00 2001
+From: Roman Arutyunyan <arut@nginx.com>
+Date: Wed, 29 Jul 2020 13:28:04 +0300
+Subject: [PATCH] Cache: ignore stale-if-error for 4xx and 5xx codes.
+
+Previously the stale-if-error extension of the Cache-Control upstream header
+triggered the return of a stale response for all error conditions that can be
+specified in the proxy_cache_use_stale directive.  The list of these errors
+includes both network/timeout/format errors, as well as some HTTP codes like
+503, 504, 403, 429 etc.  The latter prevented a cache entry from being updated
+by a response with any of these HTTP codes during the stale-if-error period.
+
+Now stale-if-error only works for network/timeout/format errors and ignores
+the upstream HTTP code.  The return of a stale response for certain HTTP codes
+is still possible using the proxy_cache_use_stale directive.
+
+This change also applies to the stale-while-revalidate extension of the
+Cache-Control header, which triggers stale-if-error if it is missing.
+
+Reported at
+http://mailman.nginx.org/pipermail/nginx/2020-July/059723.html.
+---
+ src/http/ngx_http_upstream.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/http/ngx_http_upstream.c b/src/http/ngx_http_upstream.c
+index 47f98ccb29..dda4046be8 100644
+--- a/src/http/ngx_http_upstream.c
++++ b/src/http/ngx_http_upstream.c
+@@ -2473,7 +2473,7 @@ ngx_http_upstream_test_next(ngx_http_request_t *r, ngx_http_upstream_t *u)
+ #if (NGX_HTTP_CACHE)
+ 
+         if (u->cache_status == NGX_HTTP_CACHE_EXPIRED
+-            && ((u->conf->cache_use_stale & un->mask) || r->cache->stale_error))
++            && (u->conf->cache_use_stale & un->mask))
+         {
+             ngx_int_t  rc;
+ 

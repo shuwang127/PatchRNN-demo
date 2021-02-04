@@ -1,0 +1,31 @@
+From a1864c25861c8cb0b972815e4cbafcf227c4f8cb Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Wed, 16 Sep 2020 18:26:23 +0300
+Subject: [PATCH] SSL: fixed event handling during shutdown.
+
+The c->read->ready and c->write->ready flags need to be cleared to ensure
+that appropriate read or write events will be reported by kernel.  Without
+this, SSL shutdown might wait till the timeout after blocking on writing
+or reading even if there is a socket activity.
+---
+ src/event/ngx_event_openssl.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/event/ngx_event_openssl.c b/src/event/ngx_event_openssl.c
+index 62b475d777..2f51b133a1 100644
+--- a/src/event/ngx_event_openssl.c
++++ b/src/event/ngx_event_openssl.c
+@@ -2865,6 +2865,13 @@ ngx_ssl_shutdown(ngx_connection_t *c)
+             c->read->handler = ngx_ssl_shutdown_handler;
+             c->write->handler = ngx_ssl_shutdown_handler;
+ 
++            if (sslerr == SSL_ERROR_WANT_READ) {
++                c->read->ready = 0;
++
++            } else {
++                c->write->ready = 0;
++            }
++
+             if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
+                 return NGX_ERROR;
+             }

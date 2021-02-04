@@ -1,0 +1,49 @@
+From 9c3ac44de268f0cf057bc5dd67929e74c9bbc3e3 Mon Sep 17 00:00:00 2001
+From: Ruslan Ermilov <ru@nginx.com>
+Date: Mon, 1 Jun 2020 22:31:23 +0300
+Subject: [PATCH] Fixed SIGQUIT not removing listening UNIX sockets (closes
+ #753).
+
+Listening UNIX sockets were not removed on graceful shutdown, preventing
+the next runs.  The fix is to replace the custom socket closing code in
+ngx_master_process_cycle() by the ngx_close_listening_sockets() call.
+---
+ src/os/unix/ngx_process_cycle.c | 14 ++------------
+ 1 file changed, 2 insertions(+), 12 deletions(-)
+
+diff --git a/src/os/unix/ngx_process_cycle.c b/src/os/unix/ngx_process_cycle.c
+index 5817a2c23b..f87e009231 100644
+--- a/src/os/unix/ngx_process_cycle.c
++++ b/src/os/unix/ngx_process_cycle.c
+@@ -77,12 +77,11 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
+     u_char            *p;
+     size_t             size;
+     ngx_int_t          i;
+-    ngx_uint_t         n, sigio;
++    ngx_uint_t         sigio;
+     sigset_t           set;
+     struct itimerval   itv;
+     ngx_uint_t         live;
+     ngx_msec_t         delay;
+-    ngx_listening_t   *ls;
+     ngx_core_conf_t   *ccf;
+ 
+     sigemptyset(&set);
+@@ -204,16 +203,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
+         if (ngx_quit) {
+             ngx_signal_worker_processes(cycle,
+                                         ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
+-
+-            ls = cycle->listening.elts;
+-            for (n = 0; n < cycle->listening.nelts; n++) {
+-                if (ngx_close_socket(ls[n].fd) == -1) {
+-                    ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_socket_errno,
+-                                  ngx_close_socket_n " %V failed",
+-                                  &ls[n].addr_text);
+-                }
+-            }
+-            cycle->listening.nelts = 0;
++            ngx_close_listening_sockets(cycle);
+ 
+             continue;
+         }

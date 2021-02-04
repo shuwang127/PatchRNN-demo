@@ -1,0 +1,48 @@
+From ed0b19cdd4a9118cf8795ba2cf0a56684624bb41 Mon Sep 17 00:00:00 2001
+From: Sergey Kandaurov <pluknet@nginx.com>
+Date: Fri, 4 Aug 2017 19:37:37 +0300
+Subject: [PATCH] Cache: reset c->body_start when reading a variant on Vary
+ mismatch.
+
+Previously, a variant not present in shared memory and stored on disk using a
+secondary key was read using c->body_start from a variant stored with a main
+key.  This could result in critical errors "cache file .. has too long header".
+---
+ src/http/ngx_http_cache.h      | 1 +
+ src/http/ngx_http_file_cache.c | 4 +++-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/http/ngx_http_cache.h b/src/http/ngx_http_cache.h
+index cd0b4bbf81..d010a4ef0a 100644
+--- a/src/http/ngx_http_cache.h
++++ b/src/http/ngx_http_cache.h
+@@ -80,6 +80,7 @@ struct ngx_http_cache_s {
+     ngx_str_t                        vary;
+     u_char                           variant[NGX_HTTP_CACHE_KEY_LEN];
+ 
++    size_t                           buffer_size;
+     size_t                           header_start;
+     size_t                           body_start;
+     off_t                            length;
+diff --git a/src/http/ngx_http_file_cache.c b/src/http/ngx_http_file_cache.c
+index e985f27b11..7a5b4ca5be 100644
+--- a/src/http/ngx_http_file_cache.c
++++ b/src/http/ngx_http_file_cache.c
+@@ -294,6 +294,8 @@ ngx_http_file_cache_open(ngx_http_request_t *r)
+         cln->data = c;
+     }
+ 
++    c->buffer_size = c->body_start;
++
+     rc = ngx_http_file_cache_exists(cache, c);
+ 
+     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+@@ -1230,7 +1232,7 @@ ngx_http_file_cache_reopen(ngx_http_request_t *r, ngx_http_cache_t *c)
+ 
+     c->secondary = 1;
+     c->file.name.len = 0;
+-    c->body_start = c->buf->end - c->buf->start;
++    c->body_start = c->buffer_size;
+ 
+     ngx_memcpy(c->key, c->variant, NGX_HTTP_CACHE_KEY_LEN);
+ 

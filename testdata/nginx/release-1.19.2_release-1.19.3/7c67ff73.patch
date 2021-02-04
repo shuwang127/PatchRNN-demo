@@ -1,0 +1,44 @@
+From 7c67ff73634acde729ceb151110f8db10322a33e Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Wed, 23 Sep 2020 19:50:49 +0300
+Subject: [PATCH] HTTP/2: fixed segfault on DATA frames after 400 errors.
+
+If 400 errors were redirected to an upstream server using the error_page
+directive, DATA frames from the client might cause segmentation fault
+due to null pointer dereference.  The bug had appeared in 6989:2c4dbcd6f2e4
+(1.13.0).
+
+Fix is to skip such frames in ngx_http_v2_state_read_data() (similarly
+to 7561:9f1f9d6e056a).  With the fix, behaviour of 400 errors in HTTP/2
+is now similar to one in HTTP/1.x, that is, nginx doesn't try to read the
+request body.
+
+Note that proxying 400 errors, as well as other early stage errors, to
+upstream servers might not be a good idea anyway.  These errors imply
+that reading and processing of the request (and the request headers)
+wasn't complete, and proxying of such incomplete request might lead to
+various errors.
+
+Reported by Chenglong Zhang.
+---
+ src/http/v2/ngx_http_v2.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/http/v2/ngx_http_v2.c b/src/http/v2/ngx_http_v2.c
+index 1037e9d15c..9c994b8a37 100644
+--- a/src/http/v2/ngx_http_v2.c
++++ b/src/http/v2/ngx_http_v2.c
+@@ -1084,6 +1084,13 @@ ngx_http_v2_state_read_data(ngx_http_v2_connection_t *h2c, u_char *pos,
+         return ngx_http_v2_state_skip_padded(h2c, pos, end);
+     }
+ 
++    if (r->headers_in.content_length_n < 0 && !r->headers_in.chunked) {
++        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, h2c->connection->log, 0,
++                       "skipping http2 DATA frame");
++
++        return ngx_http_v2_state_skip_padded(h2c, pos, end);
++    }
++
+     size = end - pos;
+ 
+     if (size >= h2c->state.length) {

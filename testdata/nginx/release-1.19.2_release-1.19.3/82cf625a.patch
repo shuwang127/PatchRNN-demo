@@ -1,0 +1,48 @@
+From 82cf625ab51dbed91bc38bdbc21ba192df2dd4d4 Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Wed, 16 Sep 2020 18:26:22 +0300
+Subject: [PATCH] SSL: workaround for incorrect SSL_write() errors in OpenSSL
+ 1.1.1.
+
+OpenSSL 1.1.1 fails to return SSL_ERROR_SYSCALL if an error happens
+during SSL_write() after close_notify alert from the peer, and returns
+SSL_ERROR_ZERO_RETURN instead.  Broken by this commit, which removes
+the "i == 0" check around the SSL_RECEIVED_SHUTDOWN one:
+
+https://git.openssl.org/?p=openssl.git;a=commitdiff;h=8051ab2
+
+In particular, if a client closed the connection without reading
+the response but with properly sent close_notify alert, this resulted in
+unexpected "SSL_write() failed while ..." critical log message instead
+of correct "SSL_write() failed (32: Broken pipe)" at the info level.
+
+Since SSL_ERROR_ZERO_RETURN cannot be legitimately returned after
+SSL_write(), the fix is to convert all SSL_ERROR_ZERO_RETURN errors
+after SSL_write() to SSL_ERROR_SYSCALL.
+---
+ src/event/ngx_event_openssl.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/src/event/ngx_event_openssl.c b/src/event/ngx_event_openssl.c
+index f387c720df..62b475d777 100644
+--- a/src/event/ngx_event_openssl.c
++++ b/src/event/ngx_event_openssl.c
+@@ -2573,6 +2573,18 @@ ngx_ssl_write(ngx_connection_t *c, u_char *data, size_t size)
+ 
+     sslerr = SSL_get_error(c->ssl->connection, n);
+ 
++    if (sslerr == SSL_ERROR_ZERO_RETURN) {
++
++        /*
++         * OpenSSL 1.1.1 fails to return SSL_ERROR_SYSCALL if an error
++         * happens during SSL_write() after close_notify alert from the
++         * peer, and returns SSL_ERROR_ZERO_RETURN instead,
++         * https://git.openssl.org/?p=openssl.git;a=commitdiff;h=8051ab2
++         */
++
++        sslerr = SSL_ERROR_SYSCALL;
++    }
++
+     err = (sslerr == SSL_ERROR_SYSCALL) ? ngx_errno : 0;
+ 
+     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0, "SSL_get_error: %d", sslerr);

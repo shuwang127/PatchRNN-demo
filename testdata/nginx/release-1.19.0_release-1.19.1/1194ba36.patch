@@ -1,0 +1,258 @@
+From 1194ba36a0685efb0818d28dad5ef518949c910b Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Mon, 6 Jul 2020 18:36:23 +0300
+Subject: [PATCH] FastCGI: protection from responses with wrong length.
+
+Previous behaviour was to pass everything to the client, but this
+seems to be suboptimal and causes issues (ticket #1695).  Fix is to
+drop extra data instead, as it naturally happens in most clients.
+
+Additionally, we now also issue a warning if the response is too
+short, and make sure the fact it is truncated is propagated to the
+client.  The u->error flag is introduced to make it possible to
+propagate the error to the client in case of unbuffered proxying.
+
+For responses to HEAD requests there is an exception: we do allow
+both responses without body and responses with body matching the
+Content-Length header.
+---
+ src/http/modules/ngx_http_fastcgi_module.c | 120 ++++++++++++++++++---
+ src/http/ngx_http_upstream.c               |   3 +-
+ src/http/ngx_http_upstream.h               |   1 +
+ 3 files changed, 109 insertions(+), 15 deletions(-)
+
+diff --git a/src/http/modules/ngx_http_fastcgi_module.c b/src/http/modules/ngx_http_fastcgi_module.c
+index 2be0672148..e50d1a70dc 100644
+--- a/src/http/modules/ngx_http_fastcgi_module.c
++++ b/src/http/modules/ngx_http_fastcgi_module.c
+@@ -81,12 +81,15 @@ typedef struct {
+     size_t                         length;
+     size_t                         padding;
+ 
++    off_t                          rest;
++
+     ngx_chain_t                   *free;
+     ngx_chain_t                   *busy;
+ 
+     unsigned                       fastcgi_stdout:1;
+     unsigned                       large_stderr:1;
+     unsigned                       header_sent:1;
++    unsigned                       closed:1;
+ 
+     ngx_array_t                   *split_parts;
+ 
+@@ -2075,13 +2078,31 @@ ngx_http_fastcgi_process_header(ngx_http_request_t *r)
+ static ngx_int_t
+ ngx_http_fastcgi_input_filter_init(void *data)
+ {
+-    ngx_http_request_t           *r = data;
++    ngx_http_request_t  *r = data;
++
++    ngx_http_upstream_t          *u;
++    ngx_http_fastcgi_ctx_t       *f;
+     ngx_http_fastcgi_loc_conf_t  *flcf;
+ 
++    u = r->upstream;
++
++    f = ngx_http_get_module_ctx(r, ngx_http_fastcgi_module);
+     flcf = ngx_http_get_module_loc_conf(r, ngx_http_fastcgi_module);
+ 
+-    r->upstream->pipe->length = flcf->keep_conn ?
+-                                (off_t) sizeof(ngx_http_fastcgi_header_t) : -1;
++    u->pipe->length = flcf->keep_conn ?
++                      (off_t) sizeof(ngx_http_fastcgi_header_t) : -1;
++
++    if (u->headers_in.status_n == NGX_HTTP_NO_CONTENT
++        || u->headers_in.status_n == NGX_HTTP_NOT_MODIFIED)
++    {
++        f->rest = 0;
++
++    } else if (r->method == NGX_HTTP_HEAD) {
++        f->rest = -2;
++
++    } else {
++        f->rest = u->headers_in.content_length_n;
++    }
+ 
+     return NGX_OK;
+ }
+@@ -2106,6 +2127,15 @@ ngx_http_fastcgi_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
+     f = ngx_http_get_module_ctx(r, ngx_http_fastcgi_module);
+     flcf = ngx_http_get_module_loc_conf(r, ngx_http_fastcgi_module);
+ 
++    if (p->upstream_done || f->closed) {
++        r->upstream->keepalive = 0;
++
++        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, p->log, 0,
++                       "http fastcgi data after close");
++
++        return NGX_OK;
++    }
++
+     b = NULL;
+     prev = &buf->shadow;
+ 
+@@ -2128,13 +2158,25 @@ ngx_http_fastcgi_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
+             if (f->type == NGX_HTTP_FASTCGI_STDOUT && f->length == 0) {
+                 f->state = ngx_http_fastcgi_st_padding;
+ 
++                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, p->log, 0,
++                               "http fastcgi closed stdout");
++
++                if (f->rest > 0) {
++                    ngx_log_error(NGX_LOG_ERR, p->log, 0,
++                                  "upstream prematurely closed "
++                                  "FastCGI stdout");
++
++                    p->upstream_error = 1;
++                    p->upstream_eof = 0;
++                    f->closed = 1;
++
++                    break;
++                }
++
+                 if (!flcf->keep_conn) {
+                     p->upstream_done = 1;
+                 }
+ 
+-                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, p->log, 0,
+-                               "http fastcgi closed stdout");
+-
+                 continue;
+             }
+ 
+@@ -2143,6 +2185,18 @@ ngx_http_fastcgi_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
+                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, p->log, 0,
+                                "http fastcgi sent end request");
+ 
++                if (f->rest > 0) {
++                    ngx_log_error(NGX_LOG_ERR, p->log, 0,
++                                  "upstream prematurely closed "
++                                  "FastCGI request");
++
++                    p->upstream_error = 1;
++                    p->upstream_eof = 0;
++                    f->closed = 1;
++
++                    break;
++                }
++
+                 if (!flcf->keep_conn) {
+                     p->upstream_done = 1;
+                     break;
+@@ -2289,15 +2343,31 @@ ngx_http_fastcgi_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
+             f->pos += f->length;
+             b->last = f->pos;
+ 
+-            continue;
++        } else {
++            f->length -= f->last - f->pos;
++            f->pos = f->last;
++            b->last = f->last;
+         }
+ 
+-        f->length -= f->last - f->pos;
++        if (f->rest == -2) {
++            f->rest = r->upstream->headers_in.content_length_n;
++        }
+ 
+-        b->last = f->last;
++        if (f->rest >= 0) {
+ 
+-        break;
++            if (b->last - b->pos > f->rest) {
++                ngx_log_error(NGX_LOG_WARN, p->log, 0,
++                              "upstream sent more data than specified in "
++                              "\"Content-Length\" header");
++
++                b->last = b->pos + f->rest;
++                p->upstream_done = 1;
++
++                break;
++            }
+ 
++            f->rest -= b->last - b->pos;
++        }
+     }
+ 
+     if (flcf->keep_conn) {
+@@ -2391,6 +2461,14 @@ ngx_http_fastcgi_non_buffered_filter(void *data, ssize_t bytes)
+ 
+             if (f->type == NGX_HTTP_FASTCGI_END_REQUEST) {
+ 
++                if (f->rest > 0) {
++                    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
++                                  "upstream prematurely closed "
++                                  "FastCGI request");
++                    u->error = 1;
++                    break;
++                }
++
+                 if (f->pos + f->padding < f->last) {
+                     u->length = 0;
+                     break;
+@@ -2510,13 +2588,27 @@ ngx_http_fastcgi_non_buffered_filter(void *data, ssize_t bytes)
+             f->pos += f->length;
+             b->last = f->pos;
+ 
+-            continue;
++        } else {
++            f->length -= f->last - f->pos;
++            f->pos = f->last;
++            b->last = f->last;
+         }
+ 
+-        f->length -= f->last - f->pos;
+-        b->last = f->last;
++        if (f->rest >= 0) {
++
++            if (b->last - b->pos > f->rest) {
++                ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
++                              "upstream sent more data than specified in "
++                              "\"Content-Length\" header");
+ 
+-        break;
++                b->last = b->pos + f->rest;
++                u->length = 0;
++
++                break;
++            }
++
++            f->rest -= b->last - b->pos;
++        }
+     }
+ 
+     return NGX_OK;
+diff --git a/src/http/ngx_http_upstream.c b/src/http/ngx_http_upstream.c
+index 354370c5a4..47f98ccb29 100644
+--- a/src/http/ngx_http_upstream.c
++++ b/src/http/ngx_http_upstream.c
+@@ -1916,6 +1916,7 @@ ngx_http_upstream_reinit(ngx_http_request_t *r, ngx_http_upstream_t *u)
+ 
+     u->keepalive = 0;
+     u->upgrade = 0;
++    u->error = 0;
+ 
+     ngx_memzero(&u->headers_in, sizeof(ngx_http_upstream_headers_in_t));
+     u->headers_in.content_length_n = -1;
+@@ -3624,7 +3625,7 @@ ngx_http_upstream_process_non_buffered_request(ngx_http_request_t *r,
+                     return;
+                 }
+ 
+-                if (upstream->read->error) {
++                if (upstream->read->error || u->error) {
+                     ngx_http_upstream_finalize_request(r, u,
+                                                        NGX_HTTP_BAD_GATEWAY);
+                     return;
+diff --git a/src/http/ngx_http_upstream.h b/src/http/ngx_http_upstream.h
+index 2c93a324ba..fd642c2d2a 100644
+--- a/src/http/ngx_http_upstream.h
++++ b/src/http/ngx_http_upstream.h
+@@ -391,6 +391,7 @@ struct ngx_http_upstream_s {
+     unsigned                         buffering:1;
+     unsigned                         keepalive:1;
+     unsigned                         upgrade:1;
++    unsigned                         error:1;
+ 
+     unsigned                         request_sent:1;
+     unsigned                         request_body_sent:1;

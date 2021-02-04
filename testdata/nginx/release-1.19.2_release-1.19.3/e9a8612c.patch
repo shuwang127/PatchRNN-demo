@@ -1,0 +1,26 @@
+From e9a8612c13380beb7b313d3ce50b223abda3f90a Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Wed, 16 Sep 2020 18:26:25 +0300
+Subject: [PATCH] SSL: disabled shutdown when there are buffered data.
+
+This fixes "SSL_shutdown() failed (SSL: ... bad write retry)" errors
+as observed on the second SSL_shutdown() call after SSL shutdown fixes in
+09fb2135a589 (1.19.2), notably when HTTP/2 connections are closed due
+to read timeouts while there are incomplete writes.
+---
+ src/event/ngx_event_openssl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/event/ngx_event_openssl.c b/src/event/ngx_event_openssl.c
+index 16dc553829..da37b71df4 100644
+--- a/src/event/ngx_event_openssl.c
++++ b/src/event/ngx_event_openssl.c
+@@ -2805,7 +2805,7 @@ ngx_ssl_shutdown(ngx_connection_t *c)
+         return NGX_OK;
+     }
+ 
+-    if (c->timedout || c->error) {
++    if (c->timedout || c->error || c->buffered) {
+         mode = SSL_RECEIVED_SHUTDOWN|SSL_SENT_SHUTDOWN;
+         SSL_set_quiet_shutdown(c->ssl->connection, 1);
+ 

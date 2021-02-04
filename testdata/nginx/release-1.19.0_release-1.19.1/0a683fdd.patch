@@ -1,0 +1,227 @@
+From 0a683fdd9313b9796bf39442fd117beaa63a7157 Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Mon, 22 Jun 2020 18:03:00 +0300
+Subject: [PATCH] Cache: introduced min_free cache clearing.
+
+Clearing cache based on free space left on a file system is
+expected to allow better disk utilization in some cases, notably
+when disk space might be also used for something other than nginx
+cache (including nginx own temporary files) and while loading
+cache (when cache size might be inaccurate for a while, effectively
+disabling max_size cache clearing).
+
+Based on a patch by Adam Bambuch.
+---
+ src/http/ngx_http_cache.h      |  1 +
+ src/http/ngx_http_file_cache.c | 43 +++++++++++++++++++++++++++++++---
+ src/os/unix/ngx_files.c        | 33 ++++++++++++++++++++++++++
+ src/os/unix/ngx_files.h        |  1 +
+ src/os/win32/ngx_files.c       | 13 ++++++++++
+ src/os/win32/ngx_files.h       |  1 +
+ 6 files changed, 89 insertions(+), 3 deletions(-)
+
+diff --git a/src/http/ngx_http_cache.h b/src/http/ngx_http_cache.h
+index f9e9664099..cd0b4bbf81 100644
+--- a/src/http/ngx_http_cache.h
++++ b/src/http/ngx_http_cache.h
+@@ -160,6 +160,7 @@ struct ngx_http_file_cache_s {
+ 
+     ngx_path_t                      *path;
+ 
++    off_t                            min_free;
+     off_t                            max_size;
+     size_t                           bsize;
+ 
+diff --git a/src/http/ngx_http_file_cache.c b/src/http/ngx_http_file_cache.c
+index ecdf11e287..e985f27b11 100644
+--- a/src/http/ngx_http_file_cache.c
++++ b/src/http/ngx_http_file_cache.c
+@@ -1959,7 +1959,7 @@ ngx_http_file_cache_manager(void *data)
+ {
+     ngx_http_file_cache_t  *cache = data;
+ 
+-    off_t       size;
++    off_t       size, free;
+     time_t      wait;
+     ngx_msec_t  elapsed, next;
+     ngx_uint_t  count, watermark;
+@@ -1988,7 +1988,19 @@ ngx_http_file_cache_manager(void *data)
+                        size, count, (ngx_int_t) watermark);
+ 
+         if (size < cache->max_size && count < watermark) {
+-            break;
++
++            if (!cache->min_free) {
++                break;
++            }
++
++            free = ngx_fs_available(cache->path->name.data);
++
++            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ngx_cycle->log, 0,
++                           "http file cache free: %O", free);
++
++            if (free > cache->min_free) {
++                break;
++            }
+         }
+ 
+         wait = ngx_http_file_cache_forced_expire(cache);
+@@ -2304,7 +2316,7 @@ ngx_http_file_cache_set_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+ {
+     char  *confp = conf;
+ 
+-    off_t                   max_size;
++    off_t                   max_size, min_free;
+     u_char                 *last, *p;
+     time_t                  inactive;
+     ssize_t                 size;
+@@ -2341,6 +2353,7 @@ ngx_http_file_cache_set_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+     name.len = 0;
+     size = 0;
+     max_size = NGX_MAX_OFF_T_VALUE;
++    min_free = 0;
+ 
+     value = cf->args->elts;
+ 
+@@ -2476,6 +2489,29 @@ ngx_http_file_cache_set_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+             continue;
+         }
+ 
++        if (ngx_strncmp(value[i].data, "min_free=", 9) == 0) {
++
++#if (NGX_WIN32 || NGX_HAVE_STATFS || NGX_HAVE_STATVFS)
++
++            s.len = value[i].len - 9;
++            s.data = value[i].data + 9;
++
++            min_free = ngx_parse_offset(&s);
++            if (min_free < 0) {
++                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++                                   "invalid min_free value \"%V\"", &value[i]);
++                return NGX_CONF_ERROR;
++            }
++
++#else
++            ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
++                               "min_free is not supported "
++                               "on this platform, ignored");
++#endif
++
++            continue;
++        }
++
+         if (ngx_strncmp(value[i].data, "loader_files=", 13) == 0) {
+ 
+             loader_files = ngx_atoi(value[i].data + 13, value[i].len - 13);
+@@ -2607,6 +2643,7 @@ ngx_http_file_cache_set_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+ 
+     cache->inactive = inactive;
+     cache->max_size = max_size;
++    cache->min_free = min_free;
+ 
+     caches = (ngx_array_t *) (confp + cmd->offset);
+ 
+diff --git a/src/os/unix/ngx_files.c b/src/os/unix/ngx_files.c
+index 7e8e58fe71..1c82a8ead0 100644
+--- a/src/os/unix/ngx_files.c
++++ b/src/os/unix/ngx_files.c
+@@ -884,6 +884,19 @@ ngx_fs_bsize(u_char *name)
+     return (size_t) fs.f_bsize;
+ }
+ 
++
++off_t
++ngx_fs_available(u_char *name)
++{
++    struct statfs  fs;
++
++    if (statfs((char *) name, &fs) == -1) {
++        return NGX_MAX_OFF_T_VALUE;
++    }
++
++    return (off_t) fs.f_bavail * fs.f_bsize;
++}
++
+ #elif (NGX_HAVE_STATVFS)
+ 
+ size_t
+@@ -908,6 +921,19 @@ ngx_fs_bsize(u_char *name)
+     return (size_t) fs.f_frsize;
+ }
+ 
++
++off_t
++ngx_fs_available(u_char *name)
++{
++    struct statvfs  fs;
++
++    if (statvfs((char *) name, &fs) == -1) {
++        return NGX_MAX_OFF_T_VALUE;
++    }
++
++    return (off_t) fs.f_bavail * fs.f_frsize;
++}
++
+ #else
+ 
+ size_t
+@@ -916,4 +942,11 @@ ngx_fs_bsize(u_char *name)
+     return 512;
+ }
+ 
++
++off_t
++ngx_fs_available(u_char *name)
++{
++    return NGX_MAX_OFF_T_VALUE;
++}
++
+ #endif
+diff --git a/src/os/unix/ngx_files.h b/src/os/unix/ngx_files.h
+index 3e36984b99..d084713b6e 100644
+--- a/src/os/unix/ngx_files.h
++++ b/src/os/unix/ngx_files.h
+@@ -349,6 +349,7 @@ ngx_int_t ngx_directio_off(ngx_fd_t fd);
+ #endif
+ 
+ size_t ngx_fs_bsize(u_char *name);
++off_t ngx_fs_available(u_char *name);
+ 
+ 
+ #if (NGX_HAVE_OPENAT)
+diff --git a/src/os/win32/ngx_files.c b/src/os/win32/ngx_files.c
+index 0b131b58af..3017b45fed 100644
+--- a/src/os/win32/ngx_files.c
++++ b/src/os/win32/ngx_files.c
+@@ -658,6 +658,19 @@ ngx_fs_bsize(u_char *name)
+ }
+ 
+ 
++off_t
++ngx_fs_available(u_char *name)
++{
++    ULARGE_INTEGER  navail;
++
++    if (GetDiskFreeSpaceEx((const char *) name, &navail, NULL, NULL) == 0) {
++        return NGX_MAX_OFF_T_VALUE;
++    }
++
++    return (off_t) navail.QuadPart;
++}
++
++
+ static ngx_int_t
+ ngx_win32_check_filename(u_char *name, u_short *u, size_t len)
+ {
+diff --git a/src/os/win32/ngx_files.h b/src/os/win32/ngx_files.h
+index 6eb720e78e..a10839ba47 100644
+--- a/src/os/win32/ngx_files.h
++++ b/src/os/win32/ngx_files.h
+@@ -259,6 +259,7 @@ ngx_int_t ngx_directio_off(ngx_fd_t fd);
+ #define ngx_directio_off_n          "ngx_directio_off_n"
+ 
+ size_t ngx_fs_bsize(u_char *name);
++off_t ngx_fs_available(u_char *name);
+ 
+ 
+ #define ngx_stdout               GetStdHandle(STD_OUTPUT_HANDLE)

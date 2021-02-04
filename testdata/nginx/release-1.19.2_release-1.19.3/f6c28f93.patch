@@ -1,0 +1,33 @@
+From f6c28f93aff7caad3c178d4989b73a6ed3281bcd Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Wed, 16 Sep 2020 18:26:24 +0300
+Subject: [PATCH] SSL: disabled shutdown after connection errors.
+
+This fixes "SSL_shutdown() failed (SSL: ... bad write retry)" errors
+as observed on the second SSL_shutdown() call after SSL shutdown fixes in
+09fb2135a589 (1.19.2), notably when sending fails in ngx_http_test_expect(),
+similarly to ticket #1194.
+
+Note that there are some places where c->error is misused to prevent
+further output, such as ngx_http_v2_finalize_connection() if there
+are pending streams, or in filter finalization.  These places seem
+to be extreme enough to don't care about missing shutdown though.
+For example, filter finalization currently prevents keepalive from
+being used.
+---
+ src/event/ngx_event_openssl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/event/ngx_event_openssl.c b/src/event/ngx_event_openssl.c
+index 2f51b133a1..16dc553829 100644
+--- a/src/event/ngx_event_openssl.c
++++ b/src/event/ngx_event_openssl.c
+@@ -2805,7 +2805,7 @@ ngx_ssl_shutdown(ngx_connection_t *c)
+         return NGX_OK;
+     }
+ 
+-    if (c->timedout) {
++    if (c->timedout || c->error) {
+         mode = SSL_RECEIVED_SHUTDOWN|SSL_SENT_SHUTDOWN;
+         SSL_set_quiet_shutdown(c->ssl->connection, 1);
+ 

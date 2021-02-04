@@ -1,0 +1,28 @@
+From 3bbeb1b8de857409c3dc9da45eb963d13b126537 Mon Sep 17 00:00:00 2001
+From: Sergey Kandaurov <pluknet@nginx.com>
+Date: Thu, 24 Sep 2020 13:51:29 +0100
+Subject: [PATCH] SSL: abort handshake on SSL_set_SSL_CTX() errors.
+
+In rare cases, such as memory allocation failure, SSL_set_SSL_CTX() returns
+NULL, which could mean that a different SSL configuration has not been set.
+Note that this new behaviour seemingly originated in OpenSSL-1.1.0 release.
+---
+ src/http/ngx_http_request.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/http/ngx_http_request.c b/src/http/ngx_http_request.c
+index f80785d8f0..2a0528c683 100644
+--- a/src/http/ngx_http_request.c
++++ b/src/http/ngx_http_request.c
+@@ -932,7 +932,10 @@ ngx_http_ssl_servername(ngx_ssl_conn_t *ssl_conn, int *ad, void *arg)
+     c->ssl->buffer_size = sscf->buffer_size;
+ 
+     if (sscf->ssl.ctx) {
+-        SSL_set_SSL_CTX(ssl_conn, sscf->ssl.ctx);
++        if (SSL_set_SSL_CTX(ssl_conn, sscf->ssl.ctx) == NULL) {
++            *ad = SSL_AD_INTERNAL_ERROR;
++            return SSL_TLSEXT_ERR_ALERT_FATAL;
++        }
+ 
+         /*
+          * SSL_set_SSL_CTX() only changes certs as of 1.0.0d

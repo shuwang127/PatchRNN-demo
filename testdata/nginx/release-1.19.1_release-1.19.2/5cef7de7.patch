@@ -1,0 +1,34 @@
+From 5cef7de7a116bab3af9097dac5a22f7652be4273 Mon Sep 17 00:00:00 2001
+From: Roman Arutyunyan <arut@nginx.com>
+Date: Thu, 9 Jul 2020 16:21:37 +0300
+Subject: [PATCH] Slice filter: clear original Accept-Ranges.
+
+The slice filter allows ranges for the response by setting the r->allow_ranges
+flag, which enables the range filter.  If the range was not requested, the
+range filter adds an Accept-Ranges header to the response to signal the
+support for ranges.
+
+Previously, if an Accept-Ranges header was already present in the first slice
+response, client received two copies of this header.  Now, the slice filter
+removes the Accept-Ranges header from the response prior to setting the
+r->allow_ranges flag.
+---
+ src/http/modules/ngx_http_slice_filter_module.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/http/modules/ngx_http_slice_filter_module.c b/src/http/modules/ngx_http_slice_filter_module.c
+index c1edbca2b6..186380a2f3 100644
+--- a/src/http/modules/ngx_http_slice_filter_module.c
++++ b/src/http/modules/ngx_http_slice_filter_module.c
+@@ -180,6 +180,11 @@ ngx_http_slice_header_filter(ngx_http_request_t *r)
+     r->headers_out.content_range->hash = 0;
+     r->headers_out.content_range = NULL;
+ 
++    if (r->headers_out.accept_ranges) {
++        r->headers_out.accept_ranges->hash = 0;
++        r->headers_out.accept_ranges = NULL;
++    }
++
+     r->allow_ranges = 1;
+     r->subrequest_ranges = 1;
+     r->single_range = 1;

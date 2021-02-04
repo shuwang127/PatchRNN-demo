@@ -1,0 +1,54 @@
+From cd69bf51ca11a102a13ba30c2800ff4d553996bf Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Mon, 22 Jun 2020 18:02:58 +0300
+Subject: [PATCH] Large block sizes on Linux are now ignored (ticket #1168).
+
+NFS on Linux is known to report wsize as a block size (in both f_bsize
+and f_frsize, both in statfs() and statvfs()).  On the other hand,
+typical file system block sizes on Linux (ext2/ext3/ext4, XFS) are limited
+to pagesize.  (With FAT, block sizes can be at least up to 512k in
+extreme cases, but this doesn't really matter, see below.)
+To avoid too aggressive cache clearing on NFS volumes on Linux, block
+sizes larger than pagesize are now ignored.
+
+Note that it is safe to ignore large block sizes.  Since 3899:e7cd13b7f759
+(1.0.1) cache size is calculated based on fstat() st_blocks, and rounding
+to file system block size is preserved mostly for Windows.
+
+Note well that on other OSes valid block sizes seen are at least up
+to 65536.  In particular, UFS on FreeBSD is known to work well with block
+and fragment sizes set to 65536.
+---
+ src/os/unix/ngx_files.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/src/os/unix/ngx_files.c b/src/os/unix/ngx_files.c
+index 482d327637..7e8e58fe71 100644
+--- a/src/os/unix/ngx_files.c
++++ b/src/os/unix/ngx_files.c
+@@ -875,6 +875,12 @@ ngx_fs_bsize(u_char *name)
+         return 512;
+     }
+ 
++#if (NGX_LINUX)
++    if ((size_t) fs.f_bsize > ngx_pagesize) {
++        return 512;
++    }
++#endif
++
+     return (size_t) fs.f_bsize;
+ }
+ 
+@@ -893,6 +899,12 @@ ngx_fs_bsize(u_char *name)
+         return 512;
+     }
+ 
++#if (NGX_LINUX)
++    if ((size_t) fs.f_frsize > ngx_pagesize) {
++        return 512;
++    }
++#endif
++
+     return (size_t) fs.f_frsize;
+ }
+ 

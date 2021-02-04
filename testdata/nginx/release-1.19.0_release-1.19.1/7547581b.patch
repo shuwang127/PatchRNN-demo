@@ -1,0 +1,128 @@
+From 7547581bbcb7b737710f9141260d822a08685b83 Mon Sep 17 00:00:00 2001
+From: Roman Arutyunyan <arut@nginx.com>
+Date: Mon, 15 Jun 2020 20:17:16 +0300
+Subject: [PATCH] OCSP: fixed use-after-free on error.
+
+When validating second and further certificates, ssl callback could be called
+twice to report the error.  After the first call client connection is
+terminated and its memory is released.  Prior to the second call and in it
+released connection memory is accessed.
+
+Errors triggering this behavior:
+- failure to create the request
+- failure to start resolving OCSP responder name
+- failure to start connecting to the OCSP responder
+
+The fix is to rearrange the code to eliminate the second call.
+---
+ src/event/ngx_event_openssl_stapling.c | 41 +++++++++++++-------------
+ 1 file changed, 20 insertions(+), 21 deletions(-)
+
+diff --git a/src/event/ngx_event_openssl_stapling.c b/src/event/ngx_event_openssl_stapling.c
+index a0a63c1651..0e79d6cc49 100644
+--- a/src/event/ngx_event_openssl_stapling.c
++++ b/src/event/ngx_event_openssl_stapling.c
+@@ -980,6 +980,7 @@ ngx_ssl_ocsp_validate_next(ngx_connection_t *c)
+         if (ocsp->ncert == n - 1 || (ocf->depth == 2 && ocsp->ncert == 1)) {
+             ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0,
+                            "ssl ocsp validated, certs:%ui", ocsp->ncert);
++            rc = NGX_OK;
+             goto done;
+         }
+ 
+@@ -988,7 +989,8 @@ ngx_ssl_ocsp_validate_next(ngx_connection_t *c)
+ 
+         ctx = ngx_ssl_ocsp_start(c->log);
+         if (ctx == NULL) {
+-            goto failed;
++            rc = NGX_ERROR;
++            goto done;
+         }
+ 
+         ocsp->ctx = ctx;
+@@ -1012,8 +1014,9 @@ ngx_ssl_ocsp_validate_next(ngx_connection_t *c)
+         ctx->uri = ocf->uri;
+         ctx->port = ocf->port;
+ 
+-        if (ngx_ssl_ocsp_responder(c, ctx) != NGX_OK) {
+-            goto failed;
++        rc = ngx_ssl_ocsp_responder(c, ctx);
++        if (rc != NGX_OK) {
++            goto done;
+         }
+ 
+         if (ctx->uri.len == 0) {
+@@ -1025,7 +1028,7 @@ ngx_ssl_ocsp_validate_next(ngx_connection_t *c)
+         rc = ngx_ssl_ocsp_cache_lookup(ctx);
+ 
+         if (rc == NGX_ERROR) {
+-            goto failed;
++            goto done;
+         }
+ 
+         if (rc == NGX_DECLINED) {
+@@ -1051,12 +1054,12 @@ ngx_ssl_ocsp_validate_next(ngx_connection_t *c)
+ 
+ done:
+ 
+-    ocsp->status = NGX_OK;
+-    return;
+-
+-failed:
++    ocsp->status = rc;
+ 
+-    ocsp->status = NGX_ERROR;
++    if (c->ssl->in_ocsp) {
++        c->ssl->handshaked = 1;
++        c->ssl->handler(c);
++    }
+ }
+ 
+ 
+@@ -1073,22 +1076,16 @@ ngx_ssl_ocsp_handler(ngx_ssl_ocsp_ctx_t *ctx)
+ 
+     rc = ngx_ssl_ocsp_verify(ctx);
+     if (rc != NGX_OK) {
+-        ocsp->status = rc;
+-        ngx_ssl_ocsp_done(ctx);
+         goto done;
+     }
+ 
+     rc = ngx_ssl_ocsp_cache_store(ctx);
+     if (rc != NGX_OK) {
+-        ocsp->status = rc;
+-        ngx_ssl_ocsp_done(ctx);
+         goto done;
+     }
+ 
+     if (ctx->status != V_OCSP_CERTSTATUS_GOOD) {
+         ocsp->cert_status = ctx->status;
+-        ocsp->status = NGX_OK;
+-        ngx_ssl_ocsp_done(ctx);
+         goto done;
+     }
+ 
+@@ -1096,15 +1093,17 @@ ngx_ssl_ocsp_handler(ngx_ssl_ocsp_ctx_t *ctx)
+ 
+     ngx_ssl_ocsp_validate_next(c);
+ 
+-done:
++    return;
+ 
+-    if (ocsp->status == NGX_AGAIN || !c->ssl->in_ocsp) {
+-        return;
+-    }
++done:
+ 
+-    c->ssl->handshaked = 1;
++    ocsp->status = rc;
++    ngx_ssl_ocsp_done(ctx);
+ 
+-    c->ssl->handler(c);
++    if (c->ssl->in_ocsp) {
++        c->ssl->handshaked = 1;
++        c->ssl->handler(c);
++    }
+ }
+ 
+ 

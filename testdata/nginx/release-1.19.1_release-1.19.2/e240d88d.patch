@@ -1,0 +1,54 @@
+From e240d88d4497afd2493358e938f74486750bc776 Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Mon, 10 Aug 2020 18:52:59 +0300
+Subject: [PATCH] Core: added a warning about reusing connections.
+
+Previously, reusing connections happened silently and was only
+visible in monitoring systems.  This was shown to be not very user-friendly,
+and administrators often didn't realize there were too few connections
+available to withstand the load, and configured timeouts (keepalive_timeout
+and http2_idle_timeout) were effectively reduced to keep things running.
+
+To provide at least some information about this, a warning is now logged
+(at most once per second, to avoid flooding the logs).
+---
+ src/core/ngx_connection.c | 13 +++++++++++++
+ src/core/ngx_cycle.h      |  1 +
+ 2 files changed, 14 insertions(+)
+
+diff --git a/src/core/ngx_connection.c b/src/core/ngx_connection.c
+index 88fefcea26..91e1b3b2e2 100644
+--- a/src/core/ngx_connection.c
++++ b/src/core/ngx_connection.c
+@@ -1298,6 +1298,19 @@ ngx_drain_connections(ngx_cycle_t *cycle)
+     ngx_queue_t       *q;
+     ngx_connection_t  *c;
+ 
++    if (cycle->reusable_connections_n == 0) {
++        return;
++    }
++
++    if (cycle->connections_reuse_time != ngx_time()) {
++        cycle->connections_reuse_time = ngx_time();
++
++        ngx_log_error(NGX_LOG_WARN, cycle->log, 0,
++                      "%ui worker_connections are not enough, "
++                      "reusing connections",
++                      cycle->connection_n);
++    }
++
+     n = ngx_max(ngx_min(32, cycle->reusable_connections_n / 8), 1);
+ 
+     for (i = 0; i < n; i++) {
+diff --git a/src/core/ngx_cycle.h b/src/core/ngx_cycle.h
+index 54fa2e6bfc..0f7d9bc741 100644
+--- a/src/core/ngx_cycle.h
++++ b/src/core/ngx_cycle.h
+@@ -55,6 +55,7 @@ struct ngx_cycle_s {
+ 
+     ngx_queue_t               reusable_connections_queue;
+     ngx_uint_t                reusable_connections_n;
++    time_t                    connections_reuse_time;
+ 
+     ngx_array_t               listening;
+     ngx_array_t               paths;

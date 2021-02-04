@@ -1,0 +1,49 @@
+From 348bc94086d94f27dbda5904174cd379bce7f931 Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Mon, 10 Aug 2020 18:53:07 +0300
+Subject: [PATCH] Core: reusing connections in advance.
+
+Reworked connections reuse, so closing connections is attempted in
+advance, as long as number of free connections is less than 1/16 of
+worker connections configured.  This ensures that new connections can
+be handled even if closing a reusable connection requires some time,
+for example, for a lingering close (ticket #2017).
+
+The 1/16 ratio is selected to be smaller than 1/8 used for disabling
+accept when working with accept mutex, so nginx will try to balance
+new connections to different workers first, and will start reusing
+connections only if this won't help.
+---
+ src/core/ngx_connection.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/src/core/ngx_connection.c b/src/core/ngx_connection.c
+index 91e1b3b2e2..c082d0dac0 100644
+--- a/src/core/ngx_connection.c
++++ b/src/core/ngx_connection.c
+@@ -1107,12 +1107,9 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
+         return NULL;
+     }
+ 
+-    c = ngx_cycle->free_connections;
++    ngx_drain_connections((ngx_cycle_t *) ngx_cycle);
+ 
+-    if (c == NULL) {
+-        ngx_drain_connections((ngx_cycle_t *) ngx_cycle);
+-        c = ngx_cycle->free_connections;
+-    }
++    c = ngx_cycle->free_connections;
+ 
+     if (c == NULL) {
+         ngx_log_error(NGX_LOG_ALERT, log, 0,
+@@ -1298,7 +1295,9 @@ ngx_drain_connections(ngx_cycle_t *cycle)
+     ngx_queue_t       *q;
+     ngx_connection_t  *c;
+ 
+-    if (cycle->reusable_connections_n == 0) {
++    if (cycle->free_connection_n > cycle->connection_n / 16
++        || cycle->reusable_connections_n == 0)
++    {
+         return;
+     }
+ 

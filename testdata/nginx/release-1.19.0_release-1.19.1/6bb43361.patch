@@ -1,0 +1,36 @@
+From 6bb43361962ba9cb9d62bf3116bb9f88f8b39260 Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Mon, 22 Jun 2020 18:02:59 +0300
+Subject: [PATCH] Too large st_blocks values are now ignored (ticket #157).
+
+With XFS, using "allocsize=64m" mount option results in large preallocation
+being reported in the st_blocks as returned by fstat() till the file is
+closed.  This in turn results in incorrect cache size calculations and
+wrong clearing based on max_size.
+
+To avoid too aggressive cache clearing on such volumes, st_blocks values
+which result in sizes larger than st_size and eight blocks (an arbitrary
+limit) are no longer trusted, and we use st_size instead.
+
+The ngx_de_fs_size() counterpart is intentionally not modified, as
+it is used on closed files and hence not affected by this problem.
+---
+ src/os/unix/ngx_files.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/os/unix/ngx_files.h b/src/os/unix/ngx_files.h
+index 383e38e65c..3e36984b99 100644
+--- a/src/os/unix/ngx_files.h
++++ b/src/os/unix/ngx_files.h
+@@ -185,7 +185,10 @@ ngx_int_t ngx_set_file_time(u_char *name, ngx_fd_t fd, time_t s);
+ #define ngx_is_exec(sb)          (((sb)->st_mode & S_IXUSR) == S_IXUSR)
+ #define ngx_file_access(sb)      ((sb)->st_mode & 0777)
+ #define ngx_file_size(sb)        (sb)->st_size
+-#define ngx_file_fs_size(sb)     ngx_max((sb)->st_size, (sb)->st_blocks * 512)
++#define ngx_file_fs_size(sb)                                                 \
++    (((sb)->st_blocks * 512 > (sb)->st_size                                  \
++     && (sb)->st_blocks * 512 < (sb)->st_size + 8 * (sb)->st_blksize)        \
++     ? (sb)->st_blocks * 512 : (sb)->st_size)
+ #define ngx_file_mtime(sb)       (sb)->st_mtime
+ #define ngx_file_uniq(sb)        (sb)->st_ino
+ 

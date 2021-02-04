@@ -1,0 +1,65 @@
+From 58d1412f0df08a90cc4df9bb3e5fb8a550daf63e Mon Sep 17 00:00:00 2001
+From: Vladimir Homutov <vl@nginx.com>
+Date: Mon, 8 Jun 2020 11:40:34 +0300
+Subject: [PATCH] Stream: fixed processing of zero length UDP packets (ticket
+ #1982).
+
+---
+ src/os/unix/ngx_udp_sendmsg_chain.c         | 7 +++++++
+ src/stream/ngx_stream_proxy_module.c        | 3 ++-
+ src/stream/ngx_stream_write_filter_module.c | 3 ++-
+ 3 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/src/os/unix/ngx_udp_sendmsg_chain.c b/src/os/unix/ngx_udp_sendmsg_chain.c
+index 5399c7916a..3d1d6dde4c 100644
+--- a/src/os/unix/ngx_udp_sendmsg_chain.c
++++ b/src/os/unix/ngx_udp_sendmsg_chain.c
+@@ -189,6 +189,13 @@ ngx_udp_output_chain_to_iovec(ngx_iovec_t *vec, ngx_chain_t *in, ngx_log_t *log)
+         return cl;
+     }
+ 
++    /* zero-sized datagram; pretend to have at least 1 iov */
++    if (n == 0) {
++        iov = &vec->iovs[n++];
++        iov->iov_base = NULL;
++        iov->iov_len = 0;
++    }
++
+     vec->count = n;
+     vec->size = total;
+ 
+diff --git a/src/stream/ngx_stream_proxy_module.c b/src/stream/ngx_stream_proxy_module.c
+index 7484a728ad..db11dd8651 100644
+--- a/src/stream/ngx_stream_proxy_module.c
++++ b/src/stream/ngx_stream_proxy_module.c
+@@ -839,7 +839,7 @@ ngx_stream_proxy_init_upstream(ngx_stream_session_t *s)
+         u->upstream_buf.last = p;
+     }
+ 
+-    if (c->buffer && c->buffer->pos < c->buffer->last) {
++    if (c->buffer && c->buffer->pos <= c->buffer->last) {
+         ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0,
+                        "stream proxy add preread buffer: %uz",
+                        c->buffer->last - c->buffer->pos);
+@@ -853,6 +853,7 @@ ngx_stream_proxy_init_upstream(ngx_stream_session_t *s)
+         *cl->buf = *c->buffer;
+ 
+         cl->buf->tag = (ngx_buf_tag_t) &ngx_stream_proxy_module;
++        cl->buf->temporary = (cl->buf->pos == cl->buf->last) ? 0 : 1;
+         cl->buf->flush = 1;
+ 
+         cl->next = u->upstream_out;
+diff --git a/src/stream/ngx_stream_write_filter_module.c b/src/stream/ngx_stream_write_filter_module.c
+index 24326c60e1..156a61c3d5 100644
+--- a/src/stream/ngx_stream_write_filter_module.c
++++ b/src/stream/ngx_stream_write_filter_module.c
+@@ -234,7 +234,8 @@ ngx_stream_write_filter(ngx_stream_session_t *s, ngx_chain_t *in,
+ 
+     if (size == 0
+         && !(c->buffered & NGX_LOWLEVEL_BUFFERED)
+-        && !(last && c->need_last_buf))
++        && !(last && c->need_last_buf)
++        && !(c->type == SOCK_DGRAM && flush))
+     {
+         if (last || flush || sync) {
+             for (cl = *out; cl; /* void */) {

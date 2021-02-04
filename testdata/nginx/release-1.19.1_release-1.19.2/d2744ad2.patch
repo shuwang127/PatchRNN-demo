@@ -1,0 +1,73 @@
+From d2744ad26fef1e4f4f6e9c12e95b57866345c071 Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Mon, 27 Jul 2020 16:02:15 +0300
+Subject: [PATCH] FastCGI: fixed zero size buf alerts on extra data (ticket
+ #2018).
+
+After 05e42236e95b (1.19.1) responses with extra data might result in
+zero size buffers being generated and "zero size buf" alerts in writer
+(if f->rest happened to be 0 when processing additional stdout data).
+---
+ src/http/modules/ngx_http_fastcgi_module.c | 28 +++++++++++++++++-----
+ 1 file changed, 22 insertions(+), 6 deletions(-)
+
+diff --git a/src/http/modules/ngx_http_fastcgi_module.c b/src/http/modules/ngx_http_fastcgi_module.c
+index e50d1a70dc..5191880e3d 100644
+--- a/src/http/modules/ngx_http_fastcgi_module.c
++++ b/src/http/modules/ngx_http_fastcgi_module.c
+@@ -2306,6 +2306,18 @@ ngx_http_fastcgi_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
+             break;
+         }
+ 
++        if (f->rest == -2) {
++            f->rest = r->upstream->headers_in.content_length_n;
++        }
++
++        if (f->rest == 0) {
++            ngx_log_error(NGX_LOG_WARN, p->log, 0,
++                          "upstream sent more data than specified in "
++                          "\"Content-Length\" header");
++            p->upstream_done = 1;
++            break;
++        }
++
+         cl = ngx_chain_get_free_buf(p->pool, &p->free);
+         if (cl == NULL) {
+             return NGX_ERROR;
+@@ -2349,11 +2361,7 @@ ngx_http_fastcgi_input_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
+             b->last = f->last;
+         }
+ 
+-        if (f->rest == -2) {
+-            f->rest = r->upstream->headers_in.content_length_n;
+-        }
+-
+-        if (f->rest >= 0) {
++        if (f->rest > 0) {
+ 
+             if (b->last - b->pos > f->rest) {
+                 ngx_log_error(NGX_LOG_WARN, p->log, 0,
+@@ -2564,6 +2572,14 @@ ngx_http_fastcgi_non_buffered_filter(void *data, ssize_t bytes)
+             break;
+         }
+ 
++        if (f->rest == 0) {
++            ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
++                          "upstream sent more data than specified in "
++                          "\"Content-Length\" header");
++            u->length = 0;
++            break;
++        }
++
+         cl = ngx_chain_get_free_buf(r->pool, &u->free_bufs);
+         if (cl == NULL) {
+             return NGX_ERROR;
+@@ -2594,7 +2610,7 @@ ngx_http_fastcgi_non_buffered_filter(void *data, ssize_t bytes)
+             b->last = f->last;
+         }
+ 
+-        if (f->rest >= 0) {
++        if (f->rest > 0) {
+ 
+             if (b->last - b->pos > f->rest) {
+                 ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,

@@ -1,0 +1,26 @@
+From e64f7fe7c903e6994defb21db0b9667dbec7c20d Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Tue, 29 Sep 2020 15:54:09 +0300
+Subject: [PATCH] Proxy: error checking for array init, missed in
+ 7716:d6a5e14aa3e4.
+
+Found by Coverity (CID 1467637).
+---
+ src/http/modules/ngx_http_proxy_module.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/http/modules/ngx_http_proxy_module.c b/src/http/modules/ngx_http_proxy_module.c
+index 17e4761c65..c5c9e8587c 100644
+--- a/src/http/modules/ngx_http_proxy_module.c
++++ b/src/http/modules/ngx_http_proxy_module.c
+@@ -2679,7 +2679,9 @@ ngx_http_proxy_rewrite_cookie(ngx_http_request_t *r, ngx_table_elt_t *h)
+     ngx_keyval_t               *attr;
+     ngx_http_proxy_loc_conf_t  *plcf;
+ 
+-    ngx_array_init(&attrs, r->pool, 2, sizeof(ngx_keyval_t));
++    if (ngx_array_init(&attrs, r->pool, 2, sizeof(ngx_keyval_t)) != NGX_OK) {
++        return NGX_ERROR;
++    }
+ 
+     if (ngx_http_proxy_parse_cookie(&h->value, &attrs) != NGX_OK) {
+         return NGX_ERROR;

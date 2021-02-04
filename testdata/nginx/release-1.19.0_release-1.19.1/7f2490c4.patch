@@ -1,0 +1,29 @@
+From 7f2490c43cec0367c94e9e0a3881f4e5e32063de Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Mon, 6 Jul 2020 18:36:21 +0300
+Subject: [PATCH] Proxy: style.
+
+---
+ src/http/modules/ngx_http_proxy_module.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/http/modules/ngx_http_proxy_module.c b/src/http/modules/ngx_http_proxy_module.c
+index 6cf15759cf..6cf2cbde0f 100644
+--- a/src/http/modules/ngx_http_proxy_module.c
++++ b/src/http/modules/ngx_http_proxy_module.c
+@@ -2206,13 +2206,13 @@ ngx_http_proxy_chunked_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
+ 
+         /* invalid response */
+ 
+-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
++        ngx_log_error(NGX_LOG_ERR, p->log, 0,
+                       "upstream sent invalid chunked response");
+ 
+         return NGX_ERROR;
+     }
+ 
+-    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
++    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, p->log, 0,
+                    "http proxy chunked state %ui, length %O",
+                    ctx->chunked.state, p->length);
+ 

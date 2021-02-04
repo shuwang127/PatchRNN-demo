@@ -1,0 +1,73 @@
+From 156e193408f8c1847f911b8758aa315d71c52211 Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Mon, 6 Jul 2020 18:36:20 +0300
+Subject: [PATCH] Proxy: detection of data after final chunk.
+
+Previously, additional data after final chunk was either ignored
+(in the same buffer, or during unbuffered proxying) or sent to the
+client (in the next buffer already if it was already read from the
+socket).  Now additional data are properly detected and ignored
+in all cases.  Additionally, a warning is now logged and keepalive
+is disabled in the connection.
+---
+ src/http/modules/ngx_http_proxy_module.c | 31 +++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/src/http/modules/ngx_http_proxy_module.c b/src/http/modules/ngx_http_proxy_module.c
+index c1c555ee4e..6cf15759cf 100644
+--- a/src/http/modules/ngx_http_proxy_module.c
++++ b/src/http/modules/ngx_http_proxy_module.c
+@@ -2104,6 +2104,23 @@ ngx_http_proxy_chunked_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
+         return NGX_ERROR;
+     }
+ 
++    if (p->upstream_done) {
++        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, p->log, 0,
++                       "http proxy data after close");
++        return NGX_OK;
++    }
++
++    if (p->length == 0) {
++
++        ngx_log_error(NGX_LOG_WARN, p->log, 0,
++                      "upstream sent data after final chunk");
++
++        r->upstream->keepalive = 0;
++        p->upstream_done = 1;
++
++        return NGX_OK;
++    }
++
+     b = NULL;
+     prev = &buf->shadow;
+ 
+@@ -2166,9 +2183,15 @@ ngx_http_proxy_chunked_filter(ngx_event_pipe_t *p, ngx_buf_t *buf)
+ 
+             /* a whole response has been parsed successfully */
+ 
+-            p->upstream_done = 1;
++            p->length = 0;
+             r->upstream->keepalive = !r->upstream->headers_in.connection_close;
+ 
++            if (buf->pos != buf->last) {
++                ngx_log_error(NGX_LOG_WARN, p->log, 0,
++                              "upstream sent data after final chunk");
++                r->upstream->keepalive = 0;
++            }
++
+             break;
+         }
+ 
+@@ -2347,6 +2370,12 @@ ngx_http_proxy_non_buffered_chunked_filter(void *data, ssize_t bytes)
+             u->keepalive = !u->headers_in.connection_close;
+             u->length = 0;
+ 
++            if (buf->pos != buf->last) {
++                ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
++                              "upstream sent data after final chunk");
++                u->keepalive = 0;
++            }
++
+             break;
+         }
+ 

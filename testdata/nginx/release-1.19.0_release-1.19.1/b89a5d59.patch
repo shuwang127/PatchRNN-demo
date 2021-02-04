@@ -1,0 +1,24 @@
+From b89a5d59983ae0451dd38524058eca445d334bed Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Tue, 26 May 2020 22:03:00 +0300
+Subject: [PATCH] Version bump.
+
+---
+ src/core/nginx.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/core/nginx.h b/src/core/nginx.h
+index 0085c5c65a..49d35c2b98 100644
+--- a/src/core/nginx.h
++++ b/src/core/nginx.h
+@@ -9,8 +9,8 @@
+ #define _NGINX_H_INCLUDED_
+ 
+ 
+-#define nginx_version      1019000
+-#define NGINX_VERSION      "1.19.0"
++#define nginx_version      1019001
++#define NGINX_VERSION      "1.19.1"
+ #define NGINX_VER          "nginx/" NGINX_VERSION
+ 
+ #ifdef NGX_BUILD

@@ -1,0 +1,54 @@
+From c3db6f729fcaece7943757c4dfb4ec58304cbad4 Mon Sep 17 00:00:00 2001
+From: balus <balus@foxmail.com>
+Date: Mon, 27 Jul 2020 13:21:51 +0300
+Subject: [PATCH] Core: enclosed parameters of the ngx_buf.h macros in
+ parentheses.
+
+---
+ src/core/ngx_buf.h | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/src/core/ngx_buf.h b/src/core/ngx_buf.h
+index 12781a7821..4b665629c7 100644
+--- a/src/core/ngx_buf.h
++++ b/src/core/ngx_buf.h
+@@ -125,20 +125,20 @@ typedef struct {
+ #define NGX_CHAIN_ERROR     (ngx_chain_t *) NGX_ERROR
+ 
+ 
+-#define ngx_buf_in_memory(b)        (b->temporary || b->memory || b->mmap)
+-#define ngx_buf_in_memory_only(b)   (ngx_buf_in_memory(b) && !b->in_file)
++#define ngx_buf_in_memory(b)       ((b)->temporary || (b)->memory || (b)->mmap)
++#define ngx_buf_in_memory_only(b)  (ngx_buf_in_memory(b) && !(b)->in_file)
+ 
+ #define ngx_buf_special(b)                                                   \
+-    ((b->flush || b->last_buf || b->sync)                                    \
+-     && !ngx_buf_in_memory(b) && !b->in_file)
++    (((b)->flush || (b)->last_buf || (b)->sync)                              \
++     && !ngx_buf_in_memory(b) && !(b)->in_file)
+ 
+ #define ngx_buf_sync_only(b)                                                 \
+-    (b->sync                                                                 \
+-     && !ngx_buf_in_memory(b) && !b->in_file && !b->flush && !b->last_buf)
++    ((b)->sync && !ngx_buf_in_memory(b)                                      \
++     && !(b)->in_file && !(b)->flush && !(b)->last_buf)
+ 
+ #define ngx_buf_size(b)                                                      \
+-    (ngx_buf_in_memory(b) ? (off_t) (b->last - b->pos):                      \
+-                            (b->file_last - b->file_pos))
++    (ngx_buf_in_memory(b) ? (off_t) ((b)->last - (b)->pos):                  \
++                            ((b)->file_last - (b)->file_pos))
+ 
+ ngx_buf_t *ngx_create_temp_buf(ngx_pool_t *pool, size_t size);
+ ngx_chain_t *ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs);
+@@ -149,8 +149,8 @@ ngx_chain_t *ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs);
+ 
+ ngx_chain_t *ngx_alloc_chain_link(ngx_pool_t *pool);
+ #define ngx_free_chain(pool, cl)                                             \
+-    cl->next = pool->chain;                                                  \
+-    pool->chain = cl
++    (cl)->next = (pool)->chain;                                              \
++    (pool)->chain = (cl)
+ 
+ 
+ 

@@ -1,0 +1,25 @@
+From 2d4f04bba0613292d8b51bf0de959e88afc72c54 Mon Sep 17 00:00:00 2001
+From: Maxim Dounin <mdounin@mdounin.ru>
+Date: Wed, 3 Jun 2020 19:11:32 +0300
+Subject: [PATCH] SSL: added verify callback to ngx_ssl_trusted_certificate().
+
+This ensures that certificate verification is properly logged to debug
+log during upstream server certificate verification.  This should help
+with debugging various certificate issues.
+---
+ src/event/ngx_event_openssl.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/event/ngx_event_openssl.c b/src/event/ngx_event_openssl.c
+index 264d4e7a4c..c1d5d6a43b 100644
+--- a/src/event/ngx_event_openssl.c
++++ b/src/event/ngx_event_openssl.c
+@@ -920,6 +920,8 @@ ngx_int_t
+ ngx_ssl_trusted_certificate(ngx_conf_t *cf, ngx_ssl_t *ssl, ngx_str_t *cert,
+     ngx_int_t depth)
+ {
++    SSL_CTX_set_verify(ssl->ctx, SSL_VERIFY_PEER, ngx_ssl_verify_callback);
++
+     SSL_CTX_set_verify_depth(ssl->ctx, depth);
+ 
+     if (cert->len == 0) {

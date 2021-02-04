@@ -1,0 +1,48 @@
+From dc1b14126e0a7a45018d95b149ebdb29985f18f1 Mon Sep 17 00:00:00 2001
+From: Sergey Kandaurov <pluknet@nginx.com>
+Date: Wed, 9 Sep 2020 19:26:27 +0300
+Subject: [PATCH] Cache: keep c->body_start when Vary changes (ticket #2029).
+
+If the variant hash doesn't match one we used as a secondary cache key,
+we switch back to the original key.  In this case, c->body_start was kept
+updated from an existing cache node overwriting the new response value.
+After file cache update, it led to discrepancy between a cache node and
+cache file seen as critical errors "file cache .. has too long header".
+---
+ src/http/ngx_http_cache.h      | 1 +
+ src/http/ngx_http_file_cache.c | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/http/ngx_http_cache.h b/src/http/ngx_http_cache.h
+index d010a4ef0a..bb936c5fe0 100644
+--- a/src/http/ngx_http_cache.h
++++ b/src/http/ngx_http_cache.h
+@@ -117,6 +117,7 @@ struct ngx_http_cache_s {
+     unsigned                         purged:1;
+     unsigned                         reading:1;
+     unsigned                         secondary:1;
++    unsigned                         update_variant:1;
+     unsigned                         background:1;
+ 
+     unsigned                         stale_updating:1;
+diff --git a/src/http/ngx_http_file_cache.c b/src/http/ngx_http_file_cache.c
+index 7a5b4ca5be..c40093bca6 100644
+--- a/src/http/ngx_http_file_cache.c
++++ b/src/http/ngx_http_file_cache.c
+@@ -854,7 +854,7 @@ ngx_http_file_cache_exists(ngx_http_file_cache_t *cache, ngx_http_cache_t *c)
+         if (fcn->exists || fcn->uses >= c->min_uses) {
+ 
+             c->exists = fcn->exists;
+-            if (fcn->body_start) {
++            if (fcn->body_start && !c->update_variant) {
+                 c->body_start = fcn->body_start;
+             }
+ 
+@@ -1339,6 +1339,7 @@ ngx_http_file_cache_update_variant(ngx_http_request_t *r, ngx_http_cache_t *c)
+     ngx_shmtx_unlock(&cache->shpool->mutex);
+ 
+     c->file.name.len = 0;
++    c->update_variant = 1;
+ 
+     ngx_memcpy(c->key, c->main, NGX_HTTP_CACHE_KEY_LEN);
+ 
