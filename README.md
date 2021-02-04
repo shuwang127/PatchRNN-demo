@@ -27,10 +27,11 @@ pip install natsort
 pip install torch
 ```
 
-Note: You might receive the following error message when running the demo program on ***Linux*** system!
+IMPORTANT Note: You might receive the following error message when running this demo program on ***Linux*** system!
 
 ```
-clang.cindex.LibclangError: libclang.so: cannot open shared object file: No such file or directory. To provide a path to libclang use Config.set_library_path() or Config.set_library_file().
+clang.cindex.LibclangError: libclang.so: cannot open shared object file: No such file or directory. 
+To provide a path to libclang use Config.set_library_path() or Config.set_library_file().
 ```
 
 **Usage**:
