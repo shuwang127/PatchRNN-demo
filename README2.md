@@ -29,8 +29,17 @@ Install `git` tool.
 sudo apt install git
 ```
 
-download `PatchRNN-demo` project to local disk.
+Download `PatchRNN-demo` project to local disk.
 
 ```shell scripts
 git clone https://github.com/SunLab-GMU/PatchRNN-demo
 ```
+
+### 3. Install the dependencies.
+
+Install `pip` tool for `python3`.
+
+```
+sudo apt install python3-pip
+```
+
