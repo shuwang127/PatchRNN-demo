@@ -48,6 +48,8 @@ Install common dependencies.
 ```shell scripts
 pip3 install nltk==3.3
 pip3 install natsort
+pip3 install pandas
+pip3 install sklearn
 ```
 
 Install CPU-version PyTorch. Official website: https://pytorch.org/.
@@ -60,4 +62,11 @@ Install `clang` tool.
 
 ```shell scripts
 pip3 install clang==6.0.0.2
+```
+
+Configurate the clang environment.
+```
+sudo apt install clang
+cd /usr/lib/x86_64-linux-gnu/
+sudo ln -s libclang-*.so.1 libclang.so
 ```
