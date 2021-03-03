@@ -22,3 +22,15 @@ We use `home` directory to store the project folder.
 ```shell scripts
 cd ~
 ```
+
+Install `git` tool.
+
+```shell scripts
+sudo apt install git
+```
+
+download `PatchRNN-demo` project to local disk.
+
+```shell scripts
+git clone https://github.com/SunLab-GMU/PatchRNN-demo
+```
