@@ -56,3 +56,8 @@ Install CPU-version PyTorch. Official website: https://pytorch.org/.
 pip3 install torch==1.7.1+cpu torchvision==0.8.2+cpu torchaudio==0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
+Install `clang` tool.
+
+```shell scripts
+pip3 install clang==6.0.0.2
+```
