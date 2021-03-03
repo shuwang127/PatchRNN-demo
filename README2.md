@@ -10,6 +10,6 @@ The virtualization software in our experiments is VirtualBox 5.2.24. \
 Download Link: https://www.virtualbox.org/wiki/Download_Old_Builds_5_2. \
 You can use other software like VMware Workstation.
 
-System configurations:
-RAM: 2GB
+System configurations:\
+RAM: 2GB\
 Disk: 10GB
