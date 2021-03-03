@@ -12,8 +12,8 @@ You can use other software like VMware Workstation.
 
 System configurations:\
 RAM: 2GB\
-Disk: 10GB\
-CPU: 1 core in i7-7700
+Disk: 25GB\
+CPU: 1 core in i7-7700HQ @ 2.8GHz
 
 ### 2. Download the source code from github
 
