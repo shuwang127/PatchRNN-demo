@@ -10,7 +10,7 @@ The virtualization software in our experiments is VirtualBox 5.2.24. \
 Download Link: https://www.virtualbox.org/wiki/Download_Old_Builds_5_2. \
 You can use other software like VMware Workstation.
 
-System configurations:\
+**System configurations:**\
 RAM: 2GB\
 Disk: 25GB\
 CPU: 1 core in i7-7700HQ @ 2.8GHz
