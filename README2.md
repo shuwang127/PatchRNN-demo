@@ -29,7 +29,7 @@ Install `git` tool.
 sudo apt install git
 ```
 
-Download `PatchRNN-demo` project to local disk.
+Download `PatchRNN-demo` project to local disk. (You may need to enter your github account/password.)
 
 ```shell scripts
 git clone https://github.com/SunLab-GMU/PatchRNN-demo
