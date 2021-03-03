@@ -12,4 +12,13 @@ You can use other software like VMware Workstation.
 
 System configurations:\
 RAM: 2GB\
-Disk: 10GB
+Disk: 10GB\
+CPU: 1 core in i7-7700
+
+### 2. Download the source code from github
+
+We use `home` directory to store the project folder.
+
+```shell scripts
+cd ~
+```
