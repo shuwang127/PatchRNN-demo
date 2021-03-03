@@ -65,8 +65,33 @@ pip3 install clang==6.0.0.2
 ```
 
 Configurate the clang environment.
-```
+
+```shell scripts
 sudo apt install clang
 cd /usr/lib/x86_64-linux-gnu/
 sudo ln -s libclang-*.so.1 libclang.so
+```
+
+### 4. Run the demo program.
+
+```shell scripts
+cd ~/PatchRNN-demo/
+python3 demo.py
+```
+
+There are 56 input test samples stored in `~/PatchRNN-demo/testdata/`, the output results are saved in `~/PatchRNN-demo/results/results.txt`.
+
+```shell scripts
+cat results/results.txt
+```
+
+You can find the results.
+
+```shell scripts
+.//testdata/nginx/release-1.19.0_release-1.19.1/0a683fdd.patch,1
+.//testdata/nginx/release-1.19.0_release-1.19.1/1bbc37d3.patch,1
+.//testdata/nginx/release-1.19.0_release-1.19.1/2afc050b.patch,0
+.//testdata/nginx/release-1.19.0_release-1.19.1/2d4f04bb.patch,0
+.//testdata/nginx/release-1.19.0_release-1.19.1/6bb43361.patch,1
+...
 ```
