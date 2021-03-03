@@ -39,7 +39,20 @@ git clone https://github.com/SunLab-GMU/PatchRNN-demo
 
 Install `pip` tool for `python3`.
 
-```
+```shell scripts
 sudo apt install python3-pip
+```
+
+Install common dependencies.
+
+```shell scripts
+pip3 install nltk==3.3
+pip3 install natsort
+```
+
+Install CPU-version PyTorch. Official website: https://pytorch.org/.
+
+```shell scripts
+pip3 install torch==1.7.1+cpu torchvision==0.8.2+cpu torchaudio==0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
