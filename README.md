@@ -1,4 +1,4 @@
-# ReadMe of PatchRNN-demo
+# ReadMe
 
 ## Description
 
