@@ -1,5 +1,37 @@
-## ReadMe for running PatchRNN
+# ReadMe of PatchRNN-demo
 
+## Description
+
+This is a demo program of PatchRNN, which identifies security patches using current neural networks. The code changes in patches are processed using a twin RNN network, while the commit message is processed with a TextRNN network. Afterward, the information from the commit message and the code revision is fused in order to get the final prediction using a multi-layer perceptron.
+
+More details about the PatchRNN can be found in the paper "[PatchRNN: A Deep Learning-Based System for Security Patch Identification](https://arxiv.org/pdf/2108.03358.pdf)", to appear in the MILCOM 2021, San Diego, USA, November 29–December 2, 2021.
+
+To cite our work, please use
+```bibtex
+@article{PatchRNN2021Wang,
+  author    = {Xinda Wang and
+               Shu Wang and
+               Pengbin Feng and
+               Kun Sun and
+               Sushil Jajodia and
+               Sanae Benchaaboun and
+               Frank Geck},
+  title     = {PatchRNN: {A} Deep Learning-Based System for Security Patch Identification},
+  journal   = {CoRR},
+  volume    = {abs/2108.03358},
+  year      = {2021},
+  url       = {https://arxiv.org/abs/2108.03358},
+  eprinttype = {arXiv},
+  eprint    = {2108.03358},
+  timestamp = {Wed, 11 Aug 2021 15:24:08 +0200},
+  biburl    = {https://dblp.org/rec/journals/corr/abs-2108-03358.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+```
+
+This demo program is base on the [PatchRNN Developer Edition (version S2020.08.08-V4)](https://github.com/shuwang127/PatchRNN), developed by [Shu Wang](https://shuwang127.github.io/).
+
+## How to run PatchRNN-demo
 
 ### 1. Install OS
 
