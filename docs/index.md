@@ -5,6 +5,7 @@ This is a demo program of PatchRNN, which identifies security patches using curr
 More details about the PatchRNN can be found in the paper "[PatchRNN: A Deep Learning-Based System for Security Patch Identification](https://shuwang127.github.io/papers/milcom21_PatchRNN.pdf)", to appear in the MILCOM 2021, San Diego, USA, November 29–December 2, 2021.
 
 To cite our work, please use
+
 ```bibtex
 @article{PatchRNN2021Wang,
   author    = {Xinda Wang and
