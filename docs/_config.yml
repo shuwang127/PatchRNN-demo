@@ -2,4 +2,4 @@ title: PatchRNN
 description: A Deep Learning-Based System for Security Patch Identification.
 show_downloads: true
 google_analytics: UA-180261057-1
-theme: jekyll-theme-hacker
+theme: jekyll-theme-cayman
