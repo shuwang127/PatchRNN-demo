@@ -48,19 +48,19 @@ CPU: 1 core in i7-7700HQ @ 2.8GHz
 
 We use `home` directory to store the project folder.
 
-```shell scripts
+```shell
 cd ~
 ```
 
 Install `git` tool.
 
-```shell scripts
+```shell 
 sudo apt install git
 ```
 
 Download `PatchRNN-demo` project to local disk. (You may need to enter your github account/password.)
 
-```shell scripts
+```shell 
 git clone https://github.com/SunLab-GMU/PatchRNN-demo
 ```
 
@@ -68,13 +68,13 @@ git clone https://github.com/SunLab-GMU/PatchRNN-demo
 
 Install `pip` tool for `python3`.
 
-```shell scripts
+```shell 
 sudo apt install python3-pip
 ```
 
 Install common dependencies.
 
-```shell scripts
+```shell 
 pip3 install nltk==3.3
 pip3 install natsort
 pip3 install pandas
@@ -83,19 +83,19 @@ pip3 install sklearn
 
 Install CPU-version PyTorch. Official website: https://pytorch.org/.
 
-```shell scripts
+```shell 
 pip3 install torch==1.7.1+cpu torchvision==0.8.2+cpu torchaudio==0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 Install `clang` tool.
 
-```shell scripts
+```shell 
 pip3 install clang==6.0.0.2
 ```
 
 Configurate the clang environment.
 
-```shell scripts
+```shell 
 sudo apt install clang
 cd /usr/lib/x86_64-linux-gnu/
 sudo ln -s libclang-*.so.1 libclang.so
@@ -103,20 +103,20 @@ sudo ln -s libclang-*.so.1 libclang.so
 
 ### 4. Run the demo program.
 
-```shell scripts
+```shell 
 cd ~/PatchRNN-demo/
 python3 demo.py
 ```
 
 There are 56 input test samples stored in `~/PatchRNN-demo/testdata/`, the output results are saved in `~/PatchRNN-demo/results/results.txt`.
 
-```shell scripts
+```shell 
 cat results/results.txt
 ```
 
 You can find the results.
 
-```shell scripts
+```shell 
 .//testdata/nginx/release-1.19.0_release-1.19.1/0a683fdd.patch,1
 .//testdata/nginx/release-1.19.0_release-1.19.1/1bbc37d3.patch,1
 .//testdata/nginx/release-1.19.0_release-1.19.1/2afc050b.patch,0
