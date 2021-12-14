@@ -1,4 +1,4 @@
-## Description
+## About
 
 This is a demo program of PatchRNN, which identifies security patches using current neural networks. The code changes in patches are processed using a twin RNN network, while the commit message is processed with a TextRNN network. Afterward, the information from the commit message and the code revision is fused in order to get the final prediction using a multi-layer perceptron.
 
