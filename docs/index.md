@@ -2,7 +2,7 @@
 
 This is a demo program of PatchRNN, which identifies security patches using current neural networks. The code changes in patches are processed using a twin RNN network, while the commit message is processed with a TextRNN network. Afterward, the information from the commit message and the code revision is fused in order to get the final prediction using a multi-layer perceptron.
 
-More details about the PatchRNN can be found in the paper "[PatchRNN: A Deep Learning-Based System for Security Patch Identification](https://arxiv.org/pdf/2108.03358.pdf)", to appear in the MILCOM 2021, San Diego, USA, November 29–December 2, 2021.
+More details about the PatchRNN can be found in the paper "[PatchRNN: A Deep Learning-Based System for Security Patch Identification](https://shuwang127.github.io/papers/milcom21_PatchRNN.pdf)", to appear in the MILCOM 2021, San Diego, USA, November 29–December 2, 2021.
 
 To cite our work, please use
 ```bibtex
