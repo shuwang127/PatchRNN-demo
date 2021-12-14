@@ -16,7 +16,7 @@ To cite our work, please use
                Sushil Jajodia and
                Sanae Benchaaboun and
                Frank Geck},
-  title     = {{PatchRNN}: A Deep Learning-Based System for Security Patch Identification},
+  title     = {{PatchRNN}: {A} Deep Learning-Based System for Security Patch Identification},
   journal   = {CoRR},
   volume    = {abs/2108.03358},
   year      = {2021},
