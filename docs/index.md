@@ -68,7 +68,7 @@ sudo apt install git
 Download `PatchRNN-demo` project to local disk. (You may need to enter your github account/password.)
 
 ```shell 
-git clone https://github.com/SunLab-GMU/PatchRNN-demo
+git clone https://github.com/shuwang127/PatchRNN-demo
 ```
 
 ### 3. Install the dependencies.
