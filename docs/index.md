@@ -5,9 +5,9 @@ layout: default
 PatchRNN is a deep learning based model to identify security patches using the recurrent neural networks. 
 The code changes in patches are processed using a twin RNN network, while the commit message is processed with a TextRNN network. Afterward, the information from the commit message and the code revision is fused in order to get the final prediction using a multi-layer perceptron.
 
-More details about the PatchRNN can be found in the paper "[PatchRNN: A Deep Learning-Based System for Security Patch Identification](https://shuwang127.github.io/papers/milcom21_PatchRNN.pdf)", to appear in the MILCOM 2021, San Diego, USA, November 29–December 2, 2021.
+More details about the PatchRNN can be found in the paper "[PatchRNN: A Deep Learning-Based System for Security Patch Identification](https://shuwang127.github.io/papers/milcom21_PatchRNN.pdf)", to appear in the IEEE/AFCEA MILCOM 2021, San Diego, USA, November 29–December 2, 2021.
 
-To cite our work, please use
+If you are using PatchRNN for work that will result in a publication (thesis, dissertation, paper, article), please use the following citation:
 
 ```bibtex
 @article{PatchRNN2021Wang,
@@ -31,9 +31,11 @@ To cite our work, please use
 }
 ```
 
-This demo program is base on the [PatchRNN Developer Edition (S2020.08.08-V4)](https://github.com/shuwang127/PatchRNN), developed by [Shu Wang](https://shuwang127.github.io/).
+To download the PatchRNN demo program, please use this [link](https://github.com/shuwang127/PatchRNN-demo).
+This demo program is base on the [PatchRNN Developer Edition (S2020.08.08-V4)](https://github.com/shuwang127/PatchRNN), developed by [Shu Wang](https://shuwang127.github.io/). 
+You can follow the [instructions](#instructions) to run this demo.
 
-## How to run PatchRNN-demo
+## How to run PatchRNN-demo <span id="instructions"></span>
 
 ### 1. Install OS
 
