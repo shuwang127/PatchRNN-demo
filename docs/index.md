@@ -33,7 +33,7 @@ If you are using PatchRNN for work that will result in a publication (thesis, di
 
 To download the PatchRNN demo program, please use this [link](https://github.com/shuwang127/PatchRNN-demo).
 This demo program is base on the [PatchRNN Developer Edition (S2020.08.08-V4)](https://github.com/shuwang127/PatchRNN), developed by [Shu Wang](https://shuwang127.github.io/). 
-You can follow the [instructions](#instructions) to run this demo.
+You can follow the provided [instructions](#instructions) to run this demo.
 
 ## How to run PatchRNN-demo <span id="instructions"></span>
 
