@@ -39,8 +39,8 @@ You can follow the provided [instructions](#instructions) to run this demo.
 
 ### 1. Install OS
 
-We use Ubuntu 20.04.2.0 LTS (Focal Fossa) desktop version. \
-Download Link: [https://releases.ubuntu.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso](https://releases.ubuntu.com/20.04/ubuntu-20.04.2.0-desktop-amd64.iso).
+We use Ubuntu 20.04.3.0 LTS (Focal Fossa) desktop version. \
+Download Link: [https://releases.ubuntu.com/20.04/ubuntu-20.04.3-desktop-amd64.iso](https://releases.ubuntu.com/20.04/ubuntu-20.04.3-desktop-amd64.iso).
 
 The virtualization software in our experiments is VirtualBox 5.2.24. \
 Download Link: [https://www.virtualbox.org/wiki/Download_Old_Builds_5_2](https://www.virtualbox.org/wiki/Download_Old_Builds_5_2). \
