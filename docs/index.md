@@ -39,7 +39,7 @@ You can follow the provided [instructions](#instructions) to run this demo.
 
 ### 1. Install OS
 
-We use Ubuntu 20.04.3.0 LTS (Focal Fossa) desktop version. \
+We use Ubuntu 20.04.3 LTS (Focal Fossa) desktop version. \
 Download Link: [https://releases.ubuntu.com/20.04/ubuntu-20.04.3-desktop-amd64.iso](https://releases.ubuntu.com/20.04/ubuntu-20.04.3-desktop-amd64.iso).
 
 The virtualization software in our experiments is VirtualBox 5.2.24. \
