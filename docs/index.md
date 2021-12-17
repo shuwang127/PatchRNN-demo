@@ -37,6 +37,10 @@ To download the PatchRNN demo program, please use this [link](https://github.com
 This demo program is based on the [PatchRNN Developer Edition (S2020.08.08-V4)](https://github.com/shuwang127/PatchRNN), developed by [Shu Wang](https://shuwang127.github.io/). 
 You can follow the provided [instructions](#instructions) to run this demo.
 
+## PatchRNN design
+
+
+
 ## How to run PatchRNN-demo <span id="instructions"></span>
 
 ### 1. Install OS
