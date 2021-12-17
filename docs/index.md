@@ -41,7 +41,7 @@ You can follow the provided [instructions](#instructions) to run this demo.
 
 ### 1. Overview
 
-![architecture](https://github.com/shuwang127/PatchRNN-demo/tree/main/docs/img/architecture.png)
+![architecture](https://shuwang127.github.io/PatchRNN-demo/img/architecture.png)
 
 ### 2. Commit message processing
 
