@@ -5,7 +5,7 @@ layout: default
 PatchRNN is a deep learning based model to identify security patches in software using recurrent neural networks. 
 Due to the different structures of patch components, PatchRNN tends to process the commit message and the code revision individually hence conducting a more comprehensive analysis.
 The code revision in patches is processed using a twin RNN model with a static analytic tool, while the commit message is processed with a TextRNN model with NLP techniques. 
-Afterward, the information from the commit message and the code revision is fused in order to get the final prediction using a multi-layer perceptron.
+Afterward, the information from the commit message and the code revision is fused to get the final prediction using a multi-layer perceptron.
 
 More details about the PatchRNN can be found in the paper "[PatchRNN: A Deep Learning-Based System for Security Patch Identification](https://shuwang127.github.io/papers/milcom21_PatchRNN.pdf)", to appear in the IEEE/AFCEA MILCOM 2021, San Diego, USA, November 29–December 2, 2021.
 
