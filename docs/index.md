@@ -39,7 +39,13 @@ You can follow the provided [instructions](#instructions) to run this demo.
 
 ## PatchRNN design
 
+### Overview
 
+### Commit message processing
+
+### Code revision processing
+
+### Final prediction
 
 ## How to run PatchRNN-demo <span id="instructions"></span>
 
