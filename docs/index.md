@@ -52,11 +52,16 @@ We use a large-scale patch dataset [PatchDB](https://sunlab-gmu.github.io/PatchD
 ![architecture](https://shuwang127.github.io/PatchRNN-demo/img/architecture.png)
 <p align="center">Figure 1: The architecture of PatchRNN model.</p>
 
-### 2. Commit message processing
+From the perspective of process flow, our system can be divided into 4 phases: text processing, featurization, RNN-based feature vector extraction, and finial identification. From the perspective of process objects, our system can be divided into 3 modules: code revision processing, commit message processing, and fused predictive modeling.
 
-### 3. Code revision processing
+### 2. Code revision processing
 
-### 4. Final prediction
+
+### 3. Commit message processing
+
+
+### 4. Fused predictive modeling
+
 
 ## How to run PatchRNN-demo <span id="instructions"></span>
 
