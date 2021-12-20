@@ -56,6 +56,11 @@ From the perspective of process flow, our system can be divided into 4 phases: t
 
 ### 2. Code revision processing
 
+- code revision extraction: `ReadDiffLines(filename)` in `ReadData()`
+- tokenization: `GetDiffProps(data)`
+  - dd 
+- level 2 item
+  - level 2 ite
 
 ### 3. Commit message processing
 
