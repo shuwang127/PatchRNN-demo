@@ -50,7 +50,7 @@ The final results are derived from the feature vectors of both parts.
 We use a large-scale patch dataset [PatchDB](https://sunlab-gmu.github.io/PatchDB/) to train the model. The size of the dataset is 38K.
 
 ![architecture](https://shuwang127.github.io/PatchRNN-demo/img/architecture.png)
-**<p align="center">Figure 1: The architecture of PatchRNN model.</p>**
+<p align="center"><strong>Figure 1: The architecture of PatchRNN model.</strong></p>
 
 From the perspective of process flow, our system can be divided into 4 phases: text processing, featurization, RNN-based feature vector extraction, and finial identification. From the perspective of process objects, our system can be divided into 3 modules: code revision processing, commit message processing, and fused predictive modeling.
 
