@@ -96,6 +96,27 @@ From the perspective of process flow, our system can be divided into 4 phases: t
 
 ### 3. Commit message processing
 
+- commit message extraction: `ReadCommitMsg(filename)` in `ReadData()`
+- commit message preprocessing: `GetCommitMsgs(data)`
+  - URL removel
+  - independent number removel
+  - lower case convertion
+  - footnote removel
+  - word tokenization
+  - non-english letter verification
+  - stopword clearance
+  - word stemming
+- word embedding generation: `GetMsgEmbed(tokenDict, embedSize)`
+- embedding mapping: `GetMsgMapping(msgs, maxLen, tokenDict)`
+- TextRNN model
+```
+# msg.
+  xMsg = x[:, :_MsgMaxLen_, -1]
+  embedsMsg = self.embedMsg(xMsg)
+  inputsMsg = embedsMsg.permute(1, 0, 2)
+  lstm_out, (h_n, c_n) = self.lstmMsg(inputsMsg)
+  featMapMsg = torch.cat([h_n[i, :, :] for i in range(h_n.shape[0])], dim=1)
+```
 
 ### 4. Fused predictive modeling
 
