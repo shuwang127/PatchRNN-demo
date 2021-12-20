@@ -58,9 +58,41 @@ From the perspective of process flow, our system can be divided into 4 phases: t
 
 - code revision extraction: `ReadDiffLines(filename)` in `ReadData()`
 - tokenization: `GetDiffProps(data)`
-  - dd 
-- level 2 item
-  - level 2 ite
+  - code tokenization: `tk`
+  - token type recognition: `tkT`
+  - diff type recognition: `dfT`
+- token preprocessing: `ProcessTokens(props, dType=1, cType=1)`
+  - maintain context? `dType`
+  - maintain comments? `cType`
+- token abstraction: `AbstractTokens(props, iType=1, lType=1)`
+  - how to abstract identifiers? `iType`
+  - how to abstract literals? `lType`
+- token embedding generation: `GetDiffEmbed(tokenDict, embedSize)`
+- unpatched and patched code division: `DivideBeforeAfter(diffProps)`
+- unpatched and patched code preprocessing
+  - indexed data convertion: `GetTwinMapping(props, maxLen, tokenDict)`
+  - one-hot data convertion: `UpdateTwinTokenTypes(data)`
+- twin RNN model
+```
+# twin 1.
+  xTwin = x[:, :_TwinMaxLen_, :6]
+  embedsTwin = self.embedTwin(xTwin[:, :, 0])
+  features = xTwin[:, :, 1:]
+  inputsTwin = torch.cat((embedsTwin.float(), features.float()), 2)
+  inputsTwin = inputsTwin.permute(1, 0, 2)
+  lstm_out, (h_n, c_n) = self.lstmTwin(inputsTwin)
+  featMapTwin1 = torch.cat([h_n[i, :, :] for i in range(h_n.shape[0])], dim=1)
+# twin 2.
+  xTwin = x[:, :_TwinMaxLen_, 6:-1]
+  embedsTwin = self.embedTwin(xTwin[:, :, 0])
+  features = xTwin[:, :, 1:]
+  inputsTwin = torch.cat((embedsTwin.float(), features.float()), 2)
+  inputsTwin = inputsTwin.permute(1, 0, 2)
+  lstm_out, (h_n, c_n) = self.lstmTwin(inputsTwin)
+  featMapTwin2 = torch.cat([h_n[i, :, :] for i in range(h_n.shape[0])], dim=1)
+# combine twins.
+  featMap = torch.cat((featMapTwin1, featMapTwin2), dim=1)
+```
 
 ### 3. Commit message processing
 
