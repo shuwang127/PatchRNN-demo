@@ -31,7 +31,7 @@ To cite our work, please use
 
 This demo program is base on the [PatchRNN Developer Edition (S2020.08.08-V4)](https://github.com/shuwang127/PatchRNN), developed by [Shu Wang](https://shuwang127.github.io/).
 
-You can also visit PatchRNN official website: [https://shuwang127.github.io/PatchRNN-demo/](https://shuwang127.github.io/PatchRNN-demo/)
+You can also visit PatchRNN official website: [https://shuwang127.github.io/PatchRNN-demo/](https://shuwang127.github.io/PatchRNN-demo/).
 
 ## How to run PatchRNN-demo
 
