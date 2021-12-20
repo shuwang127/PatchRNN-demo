@@ -118,6 +118,9 @@ From the perspective of process flow, our system can be divided into 4 phases: t
   featMapMsg = torch.cat([h_n[i, :, :] for i in range(h_n.shape[0])], dim=1)
 ```
 
+<img src="https://shuwang127.github.io/PatchRNN-demo/img/TextRNN.png" width="50%" height="50%" align=center />
+<p align="center"><strong>Figure 2: The structure of TextRNN model.</strong></p>
+
 ### 4. Fused predictive modeling
 
 - fully-connected network
