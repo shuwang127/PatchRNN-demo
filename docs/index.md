@@ -140,16 +140,16 @@ From the perspective of process flow, our system can be divided into 4 phases: t
 
 ### 1. Install OS
 
-We use Ubuntu 20.04.3 LTS (Focal Fossa) desktop version. \
-Download Link: [https://releases.ubuntu.com/20.04/ubuntu-20.04.3-desktop-amd64.iso](https://releases.ubuntu.com/20.04/ubuntu-20.04.3-desktop-amd64.iso).
+We use **Ubuntu 20.04.3 LTS (Focal Fossa)** desktop version. \
+Download Link: [https://releases.ubuntu.com/20.04/](https://releases.ubuntu.com/20.04/).
 
-The virtualization software in our experiments is VirtualBox 5.2.24. \
+The virtualization software in our experiments is **VirtualBox 5.2.24**. \
 Download Link: [https://www.virtualbox.org/wiki/Download_Old_Builds_5_2](https://www.virtualbox.org/wiki/Download_Old_Builds_5_2). \
 You can use other software like VMware Workstation.
 
-**System configurations:**\
-RAM: 2GB\
-Disk: 25GB\
+**System recommendation configurations:**\
+RAM: >=2GB\
+Disk: >=25GB\
 CPU: 1 core in i7-7700HQ @ 2.8GHz
 
 ### 2. Download the source code from github
@@ -174,13 +174,13 @@ git clone https://github.com/shuwang127/PatchRNN-demo
 
 ### 3. Install the dependencies.
 
-Install `pip` tool for `python3`.
+3.1 Install `pip` tool for `python3`.
 
 ```shell 
 sudo apt install python3-pip
 ```
 
-Install common dependencies.
+3.2 Install common dependencies.
 
 ```shell 
 pip3 install nltk==3.3
@@ -189,13 +189,13 @@ pip3 install pandas
 pip3 install sklearn
 ```
 
-Install CPU-version PyTorch. Official website: https://pytorch.org/.
+3.3 Install CPU-version PyTorch. Official website: https://pytorch.org/.
 
 ```shell 
 pip3 install torch==1.7.1+cpu torchvision==0.8.2+cpu torchaudio==0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
-Install `clang` tool.
+3.4 Install `clang` tool.
 
 ```shell 
 pip3 install clang==6.0.0.2
@@ -216,13 +216,49 @@ cd ~/PatchRNN-demo/
 python3 demo.py
 ```
 
-There are 56 input test samples stored in `~/PatchRNN-demo/testdata/`, the output results are saved in `~/PatchRNN-demo/results/results.txt`.
+There are 56 input test samples stored in `~/PatchRNN-demo/testdata/`, the logging file of running demo is stored in `~/PatchRNN-demo/logs/PatchRNNdemo.log`.
+
+```shell 
+cat logs/PatchRNNdemo.log
+```
+
+We can find the logging results.
+
+```
+[INFO] <ReadData> Save 56 raw data to .//tmp//testdata.npy. [TIME: 0.05 sec]
+[INFO] <GetDiffProps> Processing Tokens 1/56... [TIME: 3.16 sec]
+...
+[INFO] <GetDiffProps> Processing Tokens 56/56... [TIME: 63.98 sec]
+[INFO] <GetDiffProps> Save 56 diff property data to .//tmp//testprops.npy. [TIME: 63.99 sec]
+[INFO] <ProcessTokens> Delete the comment parts of the diff code. [TIME: 64.01 sec]
+[INFO] <AbstractTokens> Abstract the tokens of identifiers with iType 1 (VARn/FUNCn). [TIME: 64.04 sec]
+[INFO] <AbstractTokens> Abstract the tokens of literals, and comments with iType 1 (LITERAL/n/COMMENT). [TIME: 64.04 sec]
+[INFO] <GetDiffEmbed> Create pre-trained embedding weights with 35575 * 128 matrix. [TIME: 64.37 sec]
+[INFO] <DivideBeforeAfter> Divide diff code into BEFORE-version and AFTER-version code. [TIME: 64.38 sec]
+[INFO] <DivideBeforeAfter> The max length in BEFORE/AFTER-version code is 2994 tokens. (hyperparameter: _TwinMaxLen_ = 800) [TIME: 64.38 sec]
+[INFO] <GetTwinMapping> Create 56 feature data with 800 * 4 matrix. [TIME: 64.42 sec]
+[INFO] <GetTwinMapping> Create 56 labels with 1 * 1 matrix. [TIME: 64.42 sec]
+[INFO] <UpdateTwinTokenTypes> Update 56 feature data with 800 * 12 matrix. [TIME: 64.45 sec]
+[INFO] <GetCommitMsg> Processing Commit 1/56... [TIME: 64.49 sec]
+...
+[INFO] <GetCommitMsg> Processing Commit 56/56... [TIME: 65.93 sec]
+[INFO] <GetCommitMsg> Save 56 commit messages to .//tmp//testmsgs.npy. [TIME: 65.93 sec]
+[INFO] <GetMsgEmbed> Create pre-trained embedding weights with 80831 * 128 matrix. [TIME: 66.69 sec]
+[INFO] <GetMsgMapping> Create 56 feature data with 1 * 200 vector. [TIME: 66.7 sec]
+[INFO] <GetMsgMapping> Create 56 labels with 1 * 1 matrix. [TIME: 66.7 sec]
+[INFO] <CombineTwinMsgs> Combine the twin props with the commit messages. [TIME: 66.7 sec]
+[INFO] <demoTwin> Load model parameters with GPU-torch! [TIME: 69.14 sec]
+[INFO] <TwinRNNTest> Finish the prediction of test data. [TIME: 70.48 sec]
+[INFO] <SaveResults> Save the final results in .//results/results.txt [TIME: 70.48 sec]
+```
+
+The output results are saved in `~/PatchRNN-demo/results/results.txt`.
 
 ```shell 
 cat results/results.txt
 ```
 
-You can find the results.
+You can find the results as the format of `filepath` and `prediction`. 
 
 ```shell 
 .//testdata/nginx/release-1.19.0_release-1.19.1/0a683fdd.patch,1
@@ -232,3 +268,5 @@ You can find the results.
 .//testdata/nginx/release-1.19.0_release-1.19.1/6bb43361.patch,1
 ...
 ```
+
+1s means security patches, and 0s means non-security patches.
