@@ -41,7 +41,16 @@ You can follow the provided [instructions](#instructions) to run this demo.
 
 ### 1. Overview
 
+Figure 1 presents the architecture of our PatchRNN toolkit.
+Since a commit (i.e., a patch file) is composed of code revision and commit message, we utilize both parts to capture more comprehensive features. 
+For code revision, we reconstruct the unpatched code and patched code and process them separately with the same tokenization and abstraction strategies.
+Then a twin RNN model is adopted to generate the code vector representation. 
+For the commit message, we utilize the NLP toolkit to process the text sequences and employ a TextRNN model to obtain vector representation for commit message.
+The final results are derived from the feature vectors of both parts. 
+We use a large-scale patch dataset [PatchDB](https://sunlab-gmu.github.io/PatchDB/) to train the model. The size of the dataset is 38K.
+
 ![architecture](https://shuwang127.github.io/PatchRNN-demo/img/architecture.png)
+<p align="center">Figure 1: The architecture of PatchRNN model.</p>
 
 ### 2. Commit message processing
 
