@@ -73,7 +73,7 @@ From the perspective of process flow, our system can be divided into 4 phases: t
   - indexed data convertion: `GetTwinMapping(props, maxLen, tokenDict)`
   - one-hot data convertion: `UpdateTwinTokenTypes(data)`
 - twin RNN model
-```
+``` python
 # twin 1.
   xTwin = x[:, :_TwinMaxLen_, :6]
   embedsTwin = self.embedTwin(xTwin[:, :, 0])
@@ -109,7 +109,7 @@ From the perspective of process flow, our system can be divided into 4 phases: t
 - word embedding generation: `GetMsgEmbed(tokenDict, embedSize)`
 - embedding mapping: `GetMsgMapping(msgs, maxLen, tokenDict)`
 - TextRNN model
-```
+``` python
 # msg.
   xMsg = x[:, :_MsgMaxLen_, -1]
   embedsMsg = self.embedMsg(xMsg)
@@ -120,6 +120,18 @@ From the perspective of process flow, our system can be divided into 4 phases: t
 
 ### 4. Fused predictive modeling
 
+- fully-connected network
+``` python
+# fc layers.
+  featMap = self.fc1(featMap)
+  if (0 == _TWIN_): # (only twins).
+    final_out = self.fc2(featMap)
+  elif (1 == _TWIN_): # (twins + msg).
+    featMap = torch.cat((featMap, featMapMsg), dim=1)
+    featMap = self.fc3(featMap)
+    final_out = self.fc4(featMap)
+  return self.softmax(final_out)     
+```
 
 ## How to run PatchRNN-demo <span id="instructions"></span>
 
