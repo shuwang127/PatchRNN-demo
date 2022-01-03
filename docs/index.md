@@ -12,24 +12,15 @@ More details about the PatchRNN can be found in the paper "[PatchRNN: A Deep Lea
 If you are using PatchRNN for work that will result in a publication (thesis, dissertation, paper, article), please use the following citation:
 
 ```bibtex
-@article{PatchRNN2021Wang,
-  author    = {Xinda Wang and
-               Shu Wang and
-               Pengbin Feng and
-               Kun Sun and
-               Sushil Jajodia and
-               Sanae Benchaaboun and
-               Frank Geck},
-  title     = {PatchRNN: A Deep Learning-Based System for Security Patch Identification},
-  journal   = {CoRR},
-  volume    = {abs/2108.03358},
-  year      = {2021},
-  url       = {https://arxiv.org/abs/2108.03358},
-  eprinttype = {arXiv},
-  eprint    = {2108.03358},
-  timestamp = {Wed, 11 Aug 2021 15:24:08 +0200},
-  biburl    = {https://dblp.org/rec/journals/corr/abs-2108-03358.bib},
-  bibsource = {dblp computer science bibliography, https://dblp.org}
+@INPROCEEDINGS{PatchRNN2021Wang,
+  author={Wang, Xinda and Wang, Shu and Feng, Pengbin and Sun, Kun and Jajodia, Sushil and Benchaaboun, Sanae and Geck, Frank},
+  booktitle={MILCOM 2021 - 2021 IEEE Military Communications Conference (MILCOM)}, 
+  title={PatchRNN: A Deep Learning-Based System for Security Patch Identification}, 
+  year={2021},
+  volume={},
+  number={},
+  pages={595-600},
+  doi={10.1109/MILCOM52596.2021.9652940}
 }
 ```
 
