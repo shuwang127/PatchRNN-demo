@@ -17,8 +17,6 @@ If you are using PatchRNN for work that will result in a publication (thesis, di
   booktitle={MILCOM 2021 - 2021 IEEE Military Communications Conference (MILCOM)}, 
   title={PatchRNN: A Deep Learning-Based System for Security Patch Identification}, 
   year={2021},
-  volume={},
-  number={},
   pages={595-600},
   doi={10.1109/MILCOM52596.2021.9652940}
 }
