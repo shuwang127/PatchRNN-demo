@@ -7,7 +7,7 @@ Due to the different structures of patch components, PatchRNN tends to process t
 The code revision in patches is processed using a twin RNN model with a static analytic tool, while the commit message is processed with a TextRNN model with NLP techniques. 
 Afterward, the information from the commit message and the code revision is fused to get the final prediction using a multi-layer perceptron.
 
-More details about the PatchRNN can be found in the paper "[PatchRNN: A Deep Learning-Based System for Security Patch Identification](https://shuwang127.github.io/papers/milcom21_PatchRNN.pdf)", to appear in the IEEE/AFCEA MILCOM 2021, San Diego, USA, November 29–December 2, 2021.
+More details about the PatchRNN can be found in the paper "[PatchRNN: A Deep Learning-Based System for Security Patch Identification](https://arxiv.org/pdf/2108.03358.pdf)", to appear in the IEEE/AFCEA MILCOM 2021, San Diego, USA, November 29–December 2, 2021.
 
 If you are using PatchRNN for work that will result in a publication (thesis, dissertation, paper, article), please use the following citation:
 
